@@ -10,11 +10,9 @@ from asyncio import run as run_async
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 
-
 from src.data_base.base_class import Base
 from src.models.products import Product 
 from src.models.users import User 
-
 
 
 load_dotenv()
@@ -22,8 +20,13 @@ load_dotenv()
 
 config = context.config
 
+alembic_database_url = os.environ.get('DATABASE_URL_ALEMBIC') 
 
-config.set_main_option('sqlalchemy.url', os.environ.get('DATABASE_URL'))
+if not alembic_database_url:
+    alembic_database_url = os.environ.get('DATABASE_URL')
+
+
+config.set_main_option('sqlalchemy.url', alembic_database_url)
 
 
 if config.config_file_name is not None:

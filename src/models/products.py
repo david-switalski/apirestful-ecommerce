@@ -1,6 +1,5 @@
-from sqlalchemy import Column, String, BigInteger, Integer, Numeric, Boolean, DateTime, Text
+from sqlalchemy import Column, String, BigInteger, Integer, Numeric, Boolean, DateTime, Text, func
 from src.data_base.base_class import Base
-from datetime import datetime
 
 class Product(Base):
     id = Column(BigInteger,primary_key=True, index=True)
@@ -11,7 +10,7 @@ class Product(Base):
     category = Column(String(255), index=True, nullable=False)
     available = Column(Boolean, default=True)
     
-    created_at = Column(DateTime, default=datetime.now())
-    updated_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, onupdate=func.now(), nullable=True)
     
     
