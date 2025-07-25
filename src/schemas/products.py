@@ -1,4 +1,5 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Dateti
+import datetime
 
 class Product(BaseModel):
     model_config = ConfigDict(extra='forbid')
@@ -23,6 +24,9 @@ class UpdateProduct(BaseModel):
 class ReadProduct(Product):
     model_config = ConfigDict(from_attributes=True)
     id : int 
+    
+    created_at : datetime
+    updated_at : datetime
     
                                          
                                          
