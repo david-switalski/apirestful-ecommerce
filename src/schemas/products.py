@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Dateti
+from pydantic import BaseModel, ConfigDict
 import datetime
 
 class Product(BaseModel):
