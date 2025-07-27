@@ -1,5 +1,6 @@
 from pydantic import BaseModel, ConfigDict
-import datetime
+from datetime import datetime
+from typing import Optional
 
 class User(BaseModel):
     username : str
@@ -14,10 +15,11 @@ class UpdateUser(BaseModel):
     password : str | None = None
     
 class ReadUser(User):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
     id : int
-    created_at : datetime
-    updated_at : datetime
+    
+    created_at : Optional[datetime]
+    updated_at: Optional[datetime]
     
     
 
