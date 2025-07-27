@@ -5,9 +5,9 @@ from src.models.products import Product as ProductModel
 from sqlalchemy import select
 
 
-products_router = APIRouter(prefix = "/products")
+router = APIRouter(prefix = "/products")
 
-@products_router.get("/", tags = "Products", response_model=list[ReadProduct])
+@router.get("/", tags=["Products"], response_model=list[ReadProduct])
 async def read_all_products(db = Depends(get_db)):
     stmt = select(ProductModel)
     result = await db.execute(stmt)
@@ -17,7 +17,7 @@ async def read_all_products(db = Depends(get_db)):
     return  products
     
     
-@products_router.get("/{product_id}", tags = "Products", response_model=ReadProduct)
+@router.get("/{product_id}", tags=["Products"], response_model=ReadProduct)
 async def read_product(product_id : int, db = Depends(get_db)):
     stmt = select(ProductModel).where(ProductModel.id == product_id)
     
@@ -30,7 +30,7 @@ async def read_product(product_id : int, db = Depends(get_db)):
     else:
         raise HTTPException(status_code=404, detail="Product not found")
 
-@products_router.post("/create_product", tags="Products", response_model=ReadProduct)
+@router.post("/create_product", tags=["Products"], response_model=ReadProduct)
 async def create_product(product : CreateProduct, db = Depends(get_db)):
     model = ProductModel(**product.model_dump())
     db.add(model)
@@ -39,7 +39,7 @@ async def create_product(product : CreateProduct, db = Depends(get_db)):
     
     return model
 
-@products_router.patch("/{product_id}", tags="Product", response_model=ReadProduct)
+@router.patch("/{product_id}", tags=["Products"], response_model=ReadProduct)
 async def update_product(product_id : int, product : UpdateProduct, db = Depends(get_db)):
     stmt = select(ProductModel).where(ProductModel.id == product_id)
     
@@ -60,7 +60,7 @@ async def update_product(product_id : int, product : UpdateProduct, db = Depends
     else:
         raise HTTPException(status_code=404, detail="Product not found")
 
-@products_router("/{product_id}", tags="Products", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{product_id}", tags=["Products"], status_code=status.HTTP_204_NO_CONTENT)
 async def delete_product(product_id : int, db = Depends(get_db)):
     stmt = select(ProductModel).where(ProductModel.id == product_id)
     
@@ -69,7 +69,7 @@ async def delete_product(product_id : int, db = Depends(get_db)):
     deleted_product = result.scalars().first()
     
     if deleted_product is not None:
-        db.delete(deleted_product)
+        await db.delete(deleted_product)
         await db.commit()
         
         return None

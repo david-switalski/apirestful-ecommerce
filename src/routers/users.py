@@ -5,9 +5,9 @@ from src.models.users import User as UserModel
 from sqlalchemy import select
 
 
-users_router = APIRouter(prefix = "/users")
+router = APIRouter(prefix = "/users")
 
-@users_router.get("/", tags = "Users", response_model=list[ReadUser])
+@router.get("/", tags = ["Users"], response_model=list[ReadUser])
 async def read_all_users(db = Depends(get_db)):
     stmt = select(UserModel)
     result = await db.execute(stmt)
@@ -17,7 +17,7 @@ async def read_all_users(db = Depends(get_db)):
     return  users
     
     
-@users_router.get("/{user_id}", tags = "Users", response_model=ReadUser)
+@router.get("/{user_id}", tags = ["Users"], response_model=ReadUser)
 async def read_user(user_id : int, db = Depends(get_db)):
     stmt = select(UserModel).where(UserModel.id == user_id)
     
@@ -30,7 +30,7 @@ async def read_user(user_id : int, db = Depends(get_db)):
     else:
         raise HTTPException(status_code=404, detail="User not found")
 
-@users_router.post("/", tags = "Users", response_model=ReadUser)
+@router.post("/", tags = ["Users"], response_model=ReadUser)
 async def create_user(user : CreateUser, db = Depends(get_db)):
     model = UserModel(**user.model_dump())
     db.add(model)
@@ -39,7 +39,7 @@ async def create_user(user : CreateUser, db = Depends(get_db)):
     
     return model
 
-@users_router.patch("/{user_id}", tags="User", response_model=ReadUser)
+@router.patch("/{user_id}", tags = ["Users"], response_model=ReadUser)
 async def update_user(user_id : int, user : UpdateUser, db = Depends(get_db)):
     stmt = select(UserModel).where(UserModel.id == user_id)
     
@@ -60,7 +60,7 @@ async def update_user(user_id : int, user : UpdateUser, db = Depends(get_db)):
     else:
         raise HTTPException(status_code=404, detail="User not found")
 
-@users_router.delete("/{user_id}", tags = "Users", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{user_id}", tags = ["Users"], status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user(user_id : int, db = Depends(get_db)):
     stmt = select(UserModel).where(UserModel.id == user_id)
     
@@ -69,7 +69,7 @@ async def delete_user(user_id : int, db = Depends(get_db)):
     deleted_user = result.scalars().first()
     
     if deleted_user is not None:
-        db.delete(deleted_user)
+        await db.delete(deleted_user)
         await db.commit()
         
         return None
