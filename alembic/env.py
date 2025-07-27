@@ -20,7 +20,7 @@ load_dotenv()
 
 config = context.config
 
-alembic_database_url = os.environ.get('DATABASE_URL_ALEMBIC') 
+alembic_database_url = os.environ.get('DATABASE_URL') 
 
 if not alembic_database_url:
     alembic_database_url = os.environ.get('DATABASE_URL')
