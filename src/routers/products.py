@@ -3,12 +3,13 @@ from src.schemas.products import ReadProduct, CreateProduct, UpdateProduct
 from fastapi import APIRouter, Depends, HTTPException, status
 from src.models.products import Product as ProductModel
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 router = APIRouter(prefix = "/products")
 
 @router.get("/", tags=["Products"], response_model=list[ReadProduct])
-async def read_all_products(db = Depends(get_db)):
+async def read_all_products(db: AsyncSession = Depends(get_db)):
     stmt = select(ProductModel)
     result = await db.execute(stmt)
     
@@ -18,7 +19,7 @@ async def read_all_products(db = Depends(get_db)):
     
     
 @router.get("/{product_id}", tags=["Products"], response_model=ReadProduct)
-async def read_product(product_id : int, db = Depends(get_db)):
+async def read_product(product_id : int, db: AsyncSession = Depends(get_db)):
     stmt = select(ProductModel).where(ProductModel.id == product_id)
     
     result = await db.execute(stmt)
@@ -31,7 +32,7 @@ async def read_product(product_id : int, db = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Product not found")
 
 @router.post("/create_product", tags=["Products"], response_model=ReadProduct)
-async def create_product(product : CreateProduct, db = Depends(get_db)):
+async def create_product(product : CreateProduct, db: AsyncSession = Depends(get_db)):
     model = ProductModel(**product.model_dump())
     db.add(model)
     await db.commit()
@@ -40,7 +41,7 @@ async def create_product(product : CreateProduct, db = Depends(get_db)):
     return model
 
 @router.patch("/{product_id}", tags=["Products"], response_model=ReadProduct)
-async def update_product(product_id : int, product : UpdateProduct, db = Depends(get_db)):
+async def update_product(product_id : int, product : UpdateProduct, db: AsyncSession = Depends(get_db)):
     stmt = select(ProductModel).where(ProductModel.id == product_id)
     
     result = await db.execute(stmt)
@@ -61,7 +62,7 @@ async def update_product(product_id : int, product : UpdateProduct, db = Depends
         raise HTTPException(status_code=404, detail="Product not found")
 
 @router.delete("/{product_id}", tags=["Products"], status_code=status.HTTP_204_NO_CONTENT)
-async def delete_product(product_id : int, db = Depends(get_db)):
+async def delete_product(product_id : int, db: AsyncSession = Depends(get_db)):
     stmt = select(ProductModel).where(ProductModel.id == product_id)
     
     result = await db.execute(stmt)
