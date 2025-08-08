@@ -8,7 +8,7 @@ from src.models.users import User as UserModel
 
 from src.data_base.dependencies import Db_session
 
-from src.auth_logic.dependencies import get_current_user, require_role
+from src.auth.dependencies import get_current_user, require_role
 from src.services.authentication.service import get_login_for_access_token, get_refresh_access_token
 from src.services.users.service import get_user_by_id, get_all_users, get_user_me, get_create_user, get_updated_user, get_deleted_user
 
@@ -93,7 +93,7 @@ async def login_for_access_token(
 ):
     token = await get_login_for_access_token(form_data, db)
     
-    return Token(token)
+    return token
     
 
 @router.post("/token/refresh", response_model=Token)
@@ -109,10 +109,10 @@ async def refresh_access_token(
     
     token = await get_refresh_access_token(request, db, credentials_exception)
     
-    return Token(token)
+    return token
     
 
-@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/logout", status_code=status.HTTP_200_OK)
 async def logout(
     db: Db_session,
     current_user: Annotated[UserModel, Depends(get_current_user)]
@@ -120,4 +120,4 @@ async def logout(
     current_user.hashed_refresh_token = None
     await db.commit()
     
-    return None
+    return {'message':'Logout success'}
