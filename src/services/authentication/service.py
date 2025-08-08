@@ -108,7 +108,12 @@ async def get_login_for_access_token(form_data:OAuth2PasswordRequestForm, db:Db_
 async def get_refresh_access_token(request: RefreshTokenRequest, db: Db_session, credentials_exception: HTTPException):
     try:
        
-        payload = jwt.decode(request.refresh_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(
+            request.refresh_token, 
+            settings.SECRET_KEY, 
+            audience=settings.AUDIENCE,
+            issuer=settings.ISSUER,
+            algorithms=[settings.ALGORITHM])
         
 
         if payload.get("type") != "refresh":
@@ -123,18 +128,17 @@ async def get_refresh_access_token(request: RefreshTokenRequest, db: Db_session,
         if user is None or user.hashed_refresh_token is None:
             raise credentials_exception
 
-       
+        username_for_token = user.username
+        
         is_valid_refresh_token = await verify_password(request.refresh_token, user.hashed_refresh_token)
         if not is_valid_refresh_token:
             raise credentials_exception
 
-       
-        new_refresh_token = await create_refresh_token(data={"sub": user.username, "type": "refresh"})
+        new_refresh_token = await create_refresh_token(data={"sub": username_for_token, "type": "refresh"})
         user.hashed_refresh_token = await get_password_hash(new_refresh_token)
         await db.commit()
 
-       
-        new_access_token = await create_access_token(data={"sub": user.username, "type": "access"})
+        new_access_token = await create_access_token(data={"sub": username_for_token, "type": "access"})
 
         return Token(
             access_token=new_access_token,
