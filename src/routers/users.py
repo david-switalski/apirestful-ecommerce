@@ -1,81 +1,123 @@
-from src.data_base.session import get_db
-from src.schemas.users import ReadUser, CreateUser, UpdateUser
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
+
+from src.schemas.users import ReadUser, CreateUser, UpdateUser, Token, ReadAllUsers, RefreshTokenRequest
 from src.models.users import User as UserModel
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.data_base.dependencies import Db_session
+
+from src.auth_logic.dependencies import get_current_user, require_role
+from src.services.authentication.service import get_login_for_access_token, get_refresh_access_token
+from src.services.users.service import get_user_by_id, get_all_users, get_user_me, get_create_user, get_updated_user, get_deleted_user
 
 router = APIRouter(prefix = "/users")
 
-@router.get("/", tags = ["Users"], response_model=list[ReadUser])
-async def read_all_users(db: AsyncSession = Depends(get_db)):
-    stmt = select(UserModel)
-    result = await db.execute(stmt)
+Admin_user = Annotated[UserModel, Depends(require_role("admin"))]
+
+@router.get("/", tags = ["Users"], response_model=list[ReadAllUsers])
+async def read_all_users(
+    db: Db_session,
+    admin_user: Admin_user,
+    limit: int=20, 
+    offset: int=0
+):
+    users = await get_all_users(db, limit=limit, offset=offset)
     
-    users = result.scalars().all()
-    
-    return  users
-    
-    
+    if users is not None:
+        return users
+    else:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Users not found")
+
 @router.get("/{user_id}", tags = ["Users"], response_model=ReadUser)
-async def read_user(user_id : int, db: AsyncSession = Depends(get_db)):
-    stmt = select(UserModel).where(UserModel.id == user_id)
+async def read_user(user_id : int, db: Db_session, admin_user: Admin_user):
+    user = await get_user_by_id(db, user_id)
     
-    result = await db.execute(stmt)
-    
-    user = result.scalars().first()
+    if user is not None:
+        return user
+    else:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        
+@router.get("/me/", tags = ["Users"], response_model=ReadUser)
+async def read_users_me(
+    current_user: Annotated[UserModel, Depends(get_current_user)], 
+    db: Db_session
+): 
+    user = await get_user_me(db,current_user)
     
     if user is not None:
         return  user
     else:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials")
+    
 
 @router.post("/", tags = ["Users"], response_model=ReadUser)
-async def create_user(user : CreateUser, db: AsyncSession = Depends(get_db)):
-    model = UserModel(**user.model_dump())
-    db.add(model)
-    await db.commit()
-    await db.refresh(model)
+async def create_user(user : CreateUser, db: Db_session):
+    user_model = await get_create_user(user, db)
     
-    return model
+    return user_model
 
 @router.patch("/{user_id}", tags = ["Users"], response_model=ReadUser)
-async def update_user(user_id : int, user : UpdateUser, db: AsyncSession = Depends(get_db)):
-    stmt = select(UserModel).where(UserModel.id == user_id)
+async def update_user(user_id : int, user : UpdateUser, db: Db_session , admin_user: Admin_user):
+    updated_user = await get_updated_user(user_id, user, db)
     
-    result = await db.execute(stmt)
+    if updated_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail=f"User with ID {user_id} not updated"
+        )
     
-    user_db = result.scalars().first()
-    
-    if user_db is not None:
-        update_data = user.model_dump(exclude_unset=True)
-
-        for key, value in update_data.items():
-            setattr(user_db, key, value) 
-        
-        await db.commit()
-        await db.refresh(user_db)
-        
-        return user_db
-    else:
-        raise HTTPException(status_code=404, detail="User not found")
+    return updated_user
 
 @router.delete("/{user_id}", tags = ["Users"], status_code=status.HTTP_204_NO_CONTENT)
-async def delete_user(user_id : int, db: AsyncSession = Depends(get_db)):
-    stmt = select(UserModel).where(UserModel.id == user_id)
+async def delete_user(
+    user_id : int, 
+    db: Db_session, 
+    admin_user: Admin_user
+):
+    deleted_user = await get_deleted_user(user_id, db)
     
-    result = await db.execute(stmt)
+    if deleted_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail=f"User with ID {user_id} not found"
+        )
     
-    deleted_user = result.scalars().first()
+    return None
     
-    if deleted_user is not None:
-        await db.delete(deleted_user)
-        await db.commit()
-        
-        return None
-        
-    else:
-        raise HTTPException(status_code=404, detail="User not found")
+@router.post("/token", response_model=Token)
+async def login_for_access_token(
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    db: Db_session
+):
+    token = await get_login_for_access_token(form_data, db)
     
+    return Token(token)
     
 
+@router.post("/token/refresh", response_model=Token)
+async def refresh_access_token(
+    request: RefreshTokenRequest, 
+    db: Db_session
+):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    
+    token = await get_refresh_access_token(request, db, credentials_exception)
+    
+    return Token(token)
+    
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+async def logout(
+    db: Db_session,
+    current_user: Annotated[UserModel, Depends(get_current_user)]
+):
+    current_user.hashed_refresh_token = None
+    await db.commit()
+    
+    return None

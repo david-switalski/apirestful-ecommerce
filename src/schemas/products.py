@@ -13,7 +13,7 @@ class Product(BaseModel):
     
 class CreateProduct(Product):
     pass
-    
+     
 class UpdateProduct(BaseModel):
     name : str | None = None
     category : str | None = None 
@@ -29,6 +29,11 @@ class ReadProduct(Product):
     created_at : Optional[datetime]
     updated_at: Optional[datetime]
     
+class ReadAllProducts(BaseModel):
+    id : int
+    name : str
+    price : float
+    description : str    
                                          
                                          
                                          
