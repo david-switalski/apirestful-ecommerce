@@ -11,7 +11,7 @@ from src.core.config import settings
 from src.data_base.dependencies import Db_session
 from src.services.authentication.service import get_user
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/token")
                
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)],
