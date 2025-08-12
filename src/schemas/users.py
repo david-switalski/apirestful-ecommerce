@@ -30,8 +30,7 @@ class UpdateUser(UserValidations):
     username: str | None = None
     available: bool | None = None
     password: SecretStr | None = None
-    role: UserRole | None = None
-    
+
 class ReadUser(BaseModel):
     model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
     id: int
@@ -44,7 +43,10 @@ class ReadAllUsers(BaseModel):
     id : int
     username : str
     available : bool
-        
+
+class UserRoleCurrent(BaseModel):
+    role: UserRole
+    
 class Token(BaseModel):
     access_token: str
     refresh_token: str

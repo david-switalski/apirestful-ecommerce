@@ -3,14 +3,14 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 
-from src.schemas.users import ReadUser, CreateUser, UpdateUser, Token, ReadAllUsers, RefreshTokenRequest
+from src.schemas.users import ReadUser, CreateUser, UpdateUser, Token, ReadAllUsers, RefreshTokenRequest, UserRoleCurrent
 from src.models.users import User as UserModel
 
 from src.data_base.dependencies import Db_session
 
 from src.auth.dependencies import get_current_user, require_role
 from src.services.authentication.service import get_login_for_access_token, get_refresh_access_token
-from src.services.users.service import get_user_by_id, get_all_users, get_user_me, get_create_user, get_updated_user, get_deleted_user
+from src.services.users.service import updated_new_role, get_user_by_id, get_all_users, get_user_me, get_create_user, get_updated_user, get_deleted_user
 
 router = APIRouter(prefix = "/users")
 
@@ -58,6 +58,18 @@ async def create_user(user : CreateUser, db: Db_session):
     
     return user_model
 
+@router.patch("/admin/users/{username}/role", tags = ["Role"], response_model=ReadUser)
+async def new_role_user(username: str, role: UserRoleCurrent, admin_user: Admin_user, db: Db_session):
+    new_user_role = await updated_new_role(username, role.role, db)
+    
+    if new_user_role is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'User with username {username} not found'
+        )
+    
+    return new_user_role
+    
 @router.patch("/{user_id}", tags = ["Users"], response_model=ReadUser)
 async def update_user(user_id : int, user : UpdateUser, db: Db_session , admin_user: Admin_user):
     updated_user = await get_updated_user(user_id, user, db)
@@ -86,7 +98,7 @@ async def delete_user(
     
     return None
     
-@router.post("/token", response_model=Token)
+@router.post("/token", tags = ["Token"], response_model=Token)
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: Db_session
@@ -96,7 +108,7 @@ async def login_for_access_token(
     return token
     
 
-@router.post("/token/refresh", response_model=Token)
+@router.post("/token/refresh", tags = ["Token"], response_model=Token)
 async def refresh_access_token(
     request: RefreshTokenRequest, 
     db: Db_session

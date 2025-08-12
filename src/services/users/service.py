@@ -1,8 +1,9 @@
-from sqlalchemy import select
-from src.models.users import User as UserModel
+from sqlalchemy import select, func
+from src.models.users import User as UserModel, UserRole
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.schemas.users import CreateUser, UpdateUser
-from src.services.authentication.service import get_password_hash
+from src.services.authentication.service import get_password_hash, get_user
+from src.core.exceptions import LastAdminError, UselessOperationError
 
 async def get_user_by_id(db: AsyncSession, user_id: int):
     result = await db.execute(select(UserModel).where(UserModel.id == user_id))
@@ -35,6 +36,27 @@ async def get_create_user(user: CreateUser, db: AsyncSession):
     
     return model
 
+async def updated_new_role(username : str, role: UserRole, db: AsyncSession):
+    user_to_change = await get_user(username, db)
+    
+    if user_to_change is None:
+        return None
+        
+    count_admins_user = await db.execute(select(func.count(UserModel.role)).where(UserModel.role == "admin"))
+    total_admins = count_admins_user.scalar_one()
+        
+    if user_to_change.role == role:
+        raise UselessOperationError("The user already has this role")
+        
+    if user_to_change.role == "admin" and role == "user" and total_admins <= 1:
+        raise LastAdminError("The last administrator cannot be demoted")
+        
+    user_to_change.role = role
+    await db.commit()
+    await db.refresh(user_to_change)
+    
+    return user_to_change
+
 async def get_updated_user(id: int, user:UpdateUser, db:AsyncSession):
     result = await db.execute(select(UserModel).where(UserModel.id == id))
     user_db = result.scalars().first()
@@ -61,8 +83,16 @@ async def get_deleted_user(id: int, db: AsyncSession):
     
     deleted_user = result.scalars().first()
     
-    if deleted_user is not None:
-        await db.delete(deleted_user)
-        await db.commit()
+    if deleted_user is None:
+        return None   
+       
+    count_admins_user = await db.execute(select(func.count(UserModel.role)).where(UserModel.role == "admin"))
+    total_admins = count_admins_user.scalar_one()  
+       
+    if deleted_user.role == "admin" and total_admins <= 1:
+        raise LastAdminError("The last administrator cannot be deleted")
+         
+    await db.delete(deleted_user)
+    await db.commit()
         
     return deleted_user
