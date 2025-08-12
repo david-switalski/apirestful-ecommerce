@@ -3,6 +3,9 @@ from src.core.config import settings
 from fastapi.middleware.cors import CORSMiddleware
 from src.routers.products import router as products_router
 from src.routers.users import router as users_router
+from fastapi.responses import JSONResponse
+from fastapi import Request
+from src.core.exceptions import LastAdminError, UselessOperationError
 
 app = FastAPI(
     title = settings.PROJECT_NAME, 
@@ -30,3 +33,17 @@ app.add_middleware(
 async def read_root():
     return {"message": "¡Bienvenido a mi API! Visita /docs para la documentación."}
     
+    
+@app.exception_handler(LastAdminError)
+async def last_admin_exception_handler(request: Request, exc: LastAdminError):
+    return JSONResponse(
+        status_code=400,
+        content={"detail": str (exc)}
+    )
+    
+@app.exception_handler(UselessOperationError)
+async def useless_operation_exception_handler(request: Request, exc: UselessOperationError):
+    return JSONResponse(
+        status_code=400,
+        content={"detail": str (exc)},
+    )
