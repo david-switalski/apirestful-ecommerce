@@ -31,7 +31,7 @@ app.add_middleware(
 
 @app.get("/")
 async def read_root():
-    return {"message": "¡Bienvenido a mi API! Visita /docs para la documentación."}
+    return {"message": "¡Welcome to my API! Visit /docs for the documentation."}
     
     
 @app.exception_handler(LastAdminError)
