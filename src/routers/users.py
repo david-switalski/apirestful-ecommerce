@@ -2,6 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.exc import IntegrityError
 
 from src.schemas.users import ReadUser, CreateUser, UpdateUser, Token, ReadAllUsers, RefreshTokenRequest, UserRoleCurrent
 from src.models.users import User as UserModel
@@ -54,9 +55,14 @@ async def read_users_me(
 
 @router.post("/", tags = ["Users"], response_model=ReadUser)
 async def create_user(user : CreateUser, db: Db_session):
-    user_model = await get_create_user(user, db)
-    
-    return user_model
+    try:
+        user_model = await get_create_user(user, db)
+        return user_model
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, 
+            detail=f"User with usernmae '{user.username}' already exists")
 
 @router.patch("/admin/users/{username}/role", tags = ["Role"], response_model=ReadUser)
 async def new_role_user(username: str, role: UserRoleCurrent, admin_user: Admin_user, db: Db_session):
