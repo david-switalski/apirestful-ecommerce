@@ -1,14 +1,14 @@
 import asyncio
 import pytest
 import os
-from typing import AsyncGenerator, Generator
-from dotenv import load_dotenv
 
-from fastapi.testclient import TestClient
+from typing import AsyncGenerator
+from dotenv import load_dotenv
+from httpx import AsyncClient, ASGITransport
+
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.pool import NullPool
-
 from alembic.config import Config
 from alembic import command
 
@@ -25,12 +25,6 @@ db_port = "5432"
 
 TEST_DATABASE_URL = f"postgresql+asyncpg://{db_user}:{db_password}@{db_host}:{db_port}/test_{db_name}"
 MAINTENANCE_URL = f"postgresql+asyncpg://{db_user}:{db_password}@{db_host}:{db_port}/postgres"
-
-@pytest.fixture(scope="session")
-def event_loop() -> Generator:
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
 
 @pytest.fixture(scope="session", autouse=True)
 async def setup_test_database():
@@ -67,28 +61,31 @@ async def setup_test_database():
         
     await engine.dispose()
 
-@pytest.fixture(scope="function")
-async def db_session(setup_test_database: None) -> AsyncGenerator[AsyncSession, None]:
+@pytest.fixture(scope="session")
+async def db_engine():
     engine = create_async_engine(TEST_DATABASE_URL, poolclass=NullPool)
+    yield engine
+    await engine.dispose()
 
-    async with engine.connect() as connection:
+@pytest.fixture(scope="function")
+async def db_session(db_engine) -> AsyncGenerator[AsyncSession, None]: 
+    async with db_engine.connect() as connection:
         trans = await connection.begin()
         SessionTest = async_sessionmaker(bind=connection, expire_on_commit=False)
         session = SessionTest()
         yield session
         await session.close()
         await trans.rollback()
-
-    await engine.dispose()
-
+        
 @pytest.fixture(scope="function")
-def client(db_session: AsyncSession) -> Generator[TestClient, None, None]:
-    def override_get_db() -> Generator[AsyncSession, None, None]:
-        yield db_session
+async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
+    async def override_get_db() -> AsyncSession:
+        return db_session
 
     app.dependency_overrides[get_db] = override_get_db
     
-    with TestClient(app) as test_client:
-        yield test_client
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as async_client:
+        yield async_client
 
     app.dependency_overrides.clear()
