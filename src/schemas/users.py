@@ -36,6 +36,7 @@ class ReadUser(BaseModel):
     id: int
     username: str
     available: bool
+    role: UserRole
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
     
