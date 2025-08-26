@@ -1,18 +1,27 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
-    PROJECT_NAME : str = 'APIRESTFUL E-COMMERCE'
-    PROJECT_VERSION : str = '1.0'
-    DATABASE_URL : str
-    
-    SECRET_KEY: str 
-    ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
-    
-    ISSUER: str
-    AUDIENCE: str
+    """
+    Application configuration settings.
 
+    This class loads environment variables and provides strongly-typed
+    access to configuration values such as project metadata, database URL,
+    JWT settings, and security parameters.
+    """
+    PROJECT_NAME : str = 'APIRESTFUL E-COMMERCE'  # Name of the project
+    PROJECT_VERSION : str = '1.0'                 # Version of the project
+    DATABASE_URL : str                            # Database connection URL
+    
+    SECRET_KEY: str                               # Secret key for JWT encoding/decoding
+    ALGORITHM: str = "HS256"                      # Algorithm used for JWT
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30         # Access token expiration time in minutes
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7            # Refresh token expiration time in days
+    
+    ISSUER: str                                   # JWT issuer
+    AUDIENCE: str                                 # JWT audience
+
+    # Configuration for loading environment variables from .env file
     model_config = SettingsConfigDict(env_file='.env', extra='ignore')
         
+# Singleton instance of the Settings class to be used throughout the application
 settings = Settings()

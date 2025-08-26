@@ -6,29 +6,42 @@ from src.auth.dependencies import get_user
 from src.services.authentication.service import get_password_hash
 from src.models.users import User as UserModel, UserRole
 
+# Load environment variables from .env file
 load_dotenv()
 
+# Constants for the admin user credentials
 ADMIN_USER = "SuperUser"
 ADMIN_PASSWORD = "Test12345$" # pragma: allowlist secret
 
+# Retrieve the database URL from environment variables
 local_db_url = os.getenv("DATABASE_URL_ALEMBIC")
 
 if not local_db_url:
     print("ERROR: The DATABASE_URL_ALEMBIC enviroment variable is not defined in the .env file")
     exit()
     
+# Create the asynchronous SQLAlchemy engine and session factory
 engine = create_async_engine(local_db_url)
 SessionLocal = async_sessionmaker(autocommit = False, autoflush = False, bind = engine)   
 
 async def create_admin_user():
+    """
+    Asynchronously creates an administrator user in the database if it does not already exist.
+    - Checks if the admin user exists by username.
+    - If not, hashes the password and creates a new admin user with the specified role.
+    - Commits the new user to the database.
+    """
     print("Starting script to create an administrator user...")
     async with SessionLocal() as session:
         
+        # Check if the admin user already exists
         user = await get_user(ADMIN_USER, session)
             
         if user is None:
+            # Hash the admin password
             hash_password = await get_password_hash(ADMIN_PASSWORD)
                 
+            # Create a new admin user instance
             new_admin = UserModel(username = ADMIN_USER, hashed_password = hash_password, role=UserRole.admin)
                 
             session.add(new_admin)
@@ -41,5 +54,8 @@ async def create_admin_user():
             print("The user already exists")
             
 if __name__ == "__main__":
+    """
+    Entry point for the script. Runs the create_admin_user coroutine.
+    """
     import asyncio
     asyncio.run(create_admin_user())

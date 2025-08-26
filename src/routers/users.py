@@ -15,6 +15,7 @@ from src.services.users.service import updated_new_role, get_user_by_id, get_all
 
 router = APIRouter(prefix = "/users")
 
+# Annotated dependency for requiring an admin user role
 Admin_user = Annotated[UserModel, Depends(require_role("admin"))]
 
 @router.get("/", tags = ["Users"], response_model=list[ReadAllUsers])
@@ -24,6 +25,10 @@ async def read_all_users(
     limit: int=20, 
     offset: int=0
 ):
+    """
+    Retrieve a list of all users with pagination.
+    Only accessible by admin users.
+    """
     users = await get_all_users(db, limit=limit, offset=offset)
     
     if users is not None:
@@ -33,6 +38,10 @@ async def read_all_users(
 
 @router.get("/{user_id}", tags = ["Users"], response_model=ReadUser)
 async def read_user(user_id : int, db: Db_session, admin_user: Admin_user):
+    """
+    Retrieve a user by their ID.
+    Only accessible by admin users.
+    """
     user = await get_user_by_id(db, user_id)
     
     if user is not None:
@@ -45,6 +54,9 @@ async def read_users_me(
     current_user: Annotated[UserModel, Depends(get_current_active_user)], 
     db: Db_session
 ): 
+    """
+    Retrieve the currently authenticated user's information.
+    """
     user = await get_user_me(db,current_user)
     
     if user is not None:
@@ -55,6 +67,10 @@ async def read_users_me(
 
 @router.post("/", tags = ["Users"], response_model=ReadUser)
 async def create_user(user : CreateUser, db: Db_session):
+    """
+    Create a new user.
+    Returns the created user or raises an error if the username already exists.
+    """
     try:
         user_model = await get_create_user(user, db)
         return user_model
@@ -66,6 +82,10 @@ async def create_user(user : CreateUser, db: Db_session):
 
 @router.patch("/admin/users/{username}/role", tags = ["Role"], response_model=ReadUser)
 async def new_role_user(username: str, role: UserRoleCurrent, admin_user: Admin_user, db: Db_session):
+    """
+    Update the role of a user by username.
+    Only accessible by admin users.
+    """
     new_user_role = await updated_new_role(username, role.role, db)
     
     if new_user_role is None:
@@ -78,6 +98,10 @@ async def new_role_user(username: str, role: UserRoleCurrent, admin_user: Admin_
     
 @router.patch("/{user_id}", tags = ["Users"], response_model=ReadUser)
 async def update_user(user_id : int, user : UpdateUser, db: Db_session , admin_user: Admin_user):
+    """
+    Update a user's information by their ID.
+    Only accessible by admin users.
+    """
     updated_user = await get_updated_user(user_id, user, db)
     
     if updated_user is None:
@@ -94,6 +118,10 @@ async def delete_user(
     db: Db_session, 
     admin_user: Admin_user
 ):
+    """
+    Delete a user by their ID.
+    Only accessible by admin users.
+    """
     deleted_user = await get_deleted_user(user_id, db)
     
     if deleted_user is None:
@@ -109,6 +137,9 @@ async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: Db_session
 ):
+    """
+    Authenticate user and return an access token.
+    """
     token = await get_login_for_access_token(form_data, db)
     
     return token
@@ -119,6 +150,9 @@ async def refresh_access_token(
     request: RefreshTokenRequest, 
     db: Db_session
 ):
+    """
+    Refresh the access token using a valid refresh token.
+    """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -135,6 +169,9 @@ async def logout(
     db: Db_session,
     current_user: Annotated[UserModel, Depends(get_current_user)]
 ):
+    """
+    Logout the current user by invalidating their refresh token.
+    """
     current_user.hashed_refresh_token = None
     await db.commit()
     

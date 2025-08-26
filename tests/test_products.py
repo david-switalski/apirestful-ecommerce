@@ -138,4 +138,4 @@ class TestAdminProductActions:
         """Checks that a normal user cannot delete a product."""
         response = await authenticated_user_client.delete(f"/products/{created_product.id}")
         
-        assert response.status_code
+        assert response.status_code == 403 # Fordibben
