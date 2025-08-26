@@ -1,0 +1,35 @@
+# Git environment
+.git
+.gitignore
+
+# Python virtual environment
+venv/
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Development tools configuration files
+.pytest_cache/
+pytest.ini
+.pre-commit-config.yaml
+.secrets.baseline
+alembic.ini
+alembic/
+
+# Development dependencies
+requirements-dev.txt
+
+# Test code
+tests/
+
+# Environment files and local secrets
+.env
+
+# Documentation and notes that the app doesn't need
+README.md
+
+# Configuration files for your code editor
+.vscode/
