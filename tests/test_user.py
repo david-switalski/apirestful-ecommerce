@@ -1,57 +1,12 @@
 import pytest
 from httpx import AsyncClient
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from src.models.users import User as UserModel
-from src.services.authentication.service import get_password_hash
 
 pytestmark = pytest.mark.anyio
-
-@pytest.fixture
-def test_user_credentials() -> dict:
-    return {"username": "testuser", "password": "Password123$"} # pragma: allowlist secret
-
-@pytest.fixture
-async def created_test_user(client: AsyncClient, test_user_credentials: dict) -> dict:
-    response = await client.post("/users/", json=test_user_credentials)
-    assert response.status_code == 200
-    return response.json()
-
-@pytest.fixture
-async def authenticated_user_client(client: AsyncClient, created_test_user: dict, test_user_credentials: dict) -> AsyncClient:
-    login_data = {
-        "username": test_user_credentials["username"],
-        "password": test_user_credentials["password"],
-    }
-    response = await client.post("/users/token", data=login_data)
-    assert response.status_code == 200
-    token = response.json()["access_token"]
-    
-    client.headers["Authorization"] = f"Bearer {token}"
-    return client
-
-@pytest.fixture
-async def authenticated_admin_client(client: AsyncClient, db_session: AsyncSession) -> AsyncClient:
-    admin_username = "adminuser"
-    admin_password = "AdminPassword123$" # pragma: allowlist secret
-    
-    hashed_password = await get_password_hash(admin_password)
-    admin_user = UserModel(
-        username=admin_username,
-        hashed_password=hashed_password,
-        role="admin"
-    )
-    db_session.add(admin_user)
-    await db_session.commit()
-
-    login_data = {"username": admin_username, "password": admin_password}
-    response = await client.post("/users/token", data=login_data)
-    assert response.status_code == 200
-    token = response.json()["access_token"]
-    
-    client.headers["Authorization"] = f"Bearer {token}"
-    return client
 
 class TestUserCreationAndAuth:
     
