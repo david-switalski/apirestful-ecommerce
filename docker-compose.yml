@@ -8,7 +8,9 @@ services:
     env_file:
       - .env 
     depends_on:
-      - db 
+      db:
+        condition: service_healthy
+
     command: sh -c "alembic upgrade head && uvicorn src.main:app --host 0.0.0.0 --port 8000"
 
   db: 
@@ -19,6 +21,11 @@ services:
       - .env 
     ports:
       - "5432:5432" 
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   pg_data:
