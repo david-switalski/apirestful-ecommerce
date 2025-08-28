@@ -36,20 +36,7 @@ async def read_all_users(
     else:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Users not found")
 
-@router.get("/{user_id}", tags = ["Users"], response_model=ReadUser)
-async def read_user(user_id : int, db: Db_session, admin_user: Admin_user):
-    """
-    Retrieve a user by their ID.
-    Only accessible by admin users.
-    """
-    user = await get_user_by_id(db, user_id)
-    
-    if user is not None:
-        return user
-    else:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-        
-@router.get("/me/", tags = ["Users"], response_model=ReadUser)
+@router.get("/me", tags = ["Users"], response_model=ReadUser)
 async def read_users_me(
     current_user: Annotated[UserModel, Depends(get_current_active_user)], 
     db: Db_session
@@ -64,6 +51,18 @@ async def read_users_me(
     else:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials")
     
+@router.get("/{user_id}", tags = ["Users"], response_model=ReadUser)
+async def read_user(user_id : int, db: Db_session, admin_user: Admin_user):
+    """
+    Retrieve a user by their ID.
+    Only accessible by admin users.
+    """
+    user = await get_user_by_id(db, user_id)
+    
+    if user is not None:
+        return user
+    else:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
 @router.post("/", tags = ["Users"], response_model=ReadUser)
 async def create_user(user : CreateUser, db: Db_session):
