@@ -68,7 +68,7 @@ class TestUserCreationAndAuth:
         """
         Test that an authenticated user can retrieve their own user information.
         """
-        response = await authenticated_user_client.get("/users/me/")
+        response = await authenticated_user_client.get("/users/me")
         
         assert response.status_code == 200
         data = response.json()

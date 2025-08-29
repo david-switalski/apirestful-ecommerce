@@ -39,7 +39,7 @@ class TestAccessToken:
 
     async def test_get_me_with_valid_token(self, authenticated_user_client: AsyncClient, created_test_user: dict):
         """Checks that a valid access token allows access to a protected route."""
-        response = await authenticated_user_client.get("/users/me/")
+        response = await authenticated_user_client.get("/users/me")
 
         assert response.status_code == 200
         assert response.json()["username"] == created_test_user["username"]
@@ -48,14 +48,14 @@ class TestAccessToken:
         """Checks that a malformed or invalid access token is rejected."""
         client.headers["Authorization"] = "Bearer not-a-real-token"
 
-        response = await client.get("/users/me/")
+        response = await client.get("/users/me")
 
         assert response.status_code == 401
         assert "WWW-Authenticate" in response.headers
 
     async def test_get_me_without_token(self, client: AsyncClient):
         """Checks that access to a protected route without a token is rejected."""
-        response = await client.get("/users/me/")
+        response = await client.get("/users/me")
 
         assert response.status_code == 401
 
@@ -122,7 +122,7 @@ class TestAuthorization:
         Checks that a user marked as inactive cannot access protected routes,
         even with a token that was valid in the past.
         """
-        response = await inactive_user_client.get("/users/me/")
+        response = await inactive_user_client.get("/users/me")
 
         assert response.status_code == 401
         assert response.json()["detail"]
