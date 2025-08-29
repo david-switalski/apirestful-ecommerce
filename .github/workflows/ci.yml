@@ -6,7 +6,6 @@ on:
   pull_request:
     branches: [ "main" ]
 
-
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
@@ -18,7 +17,6 @@ jobs:
           POSTGRES_USER: testuser
           POSTGRES_PASSWORD: testpassword # pragma: allowlist secret
           POSTGRES_DB: testdb
-
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -41,7 +39,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements-dev.txt
 
-    - name: Run tests
+    - name: Run tests and generate coverage report
       env:
         POSTGRES_USER: testuser
         POSTGRES_PASSWORD: testpassword # pragma: allowlist secret
@@ -51,4 +49,10 @@ jobs:
         SECRET_KEY: "a-super-secret-key-for-ci" # pragma: allowlist secret
         ISSUER: "https://test.api.com"
         AUDIENCE: "https://test.frontend.com"
-      run: pytest
+      run: pytest --cov=src --cov-report=xml 
+
+    - name: Upload coverage to Codecov 
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage.xml
+       
