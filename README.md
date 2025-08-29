@@ -122,7 +122,14 @@ Follow these steps to set up and run the project in your local environment.
     pip install -r requirements-dev.txt
     ```
 
-4.  **Set up environment variables:**
+4.  **Set up Git Hooks (pre-commit):**
+    This step is crucial for maintaining code quality. It installs the Git hooks defined in `.pre-commit-config.yaml`.
+    ```bash
+    pre-commit install
+    ```
+    Now, `detect-secrets` and other checks will run automatically before each commit.
+
+5.  **Set up environment variables:**
     Create a `.env` file from the provided example.
     ```bash
     cp .env.example .env
@@ -132,7 +139,7 @@ Follow these steps to set up and run the project in your local environment.
     python -c "import secrets; print(secrets.token_hex(32))"
     ```
 
-5.  **Start the services with Docker Compose (Recommended Method):**
+6.  **Start the services with Docker Compose (Recommended Method):**
     This command will build the image, create the containers, and apply the database migrations.
     ```bash
     docker-compose up --build
