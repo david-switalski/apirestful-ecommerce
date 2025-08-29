@@ -47,6 +47,9 @@ The project follows a modular and organized structure to enhance maintainability
 
 ```bash
 apirestful-ecommerce/
+├── .github/                   # Configuration for GitHub Actions (CI/CD)
+│   └── workflows/
+│       └── ci.yml
 ├── alembic/                   # Alembic scripts and configuration for migrations
 ├── assets/                    # Static assets (e.g., images, fonts, gifs)
 ├── scripts/                   # Utility scripts (e.g., create superuser)

@@ -1,0 +1,54 @@
+name: Python CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpassword # pragma: allowlist secret
+          POSTGRES_DB: testdb
+
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Check out repository code
+      uses: actions/checkout@v4
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements-dev.txt
+
+    - name: Run tests
+      env:
+        POSTGRES_USER: testuser
+        POSTGRES_PASSWORD: testpassword # pragma: allowlist secret
+        POSTGRES_DB: testdb
+        DATABASE_URL: postgresql+asyncpg://testuser:testpassword@localhost:5432/testdb # pragma: allowlist secret
+        DATABASE_URL_ALEMBIC: postgresql+asyncpg://testuser:testpassword@localhost:5432/testdb # pragma: allowlist secret
+        SECRET_KEY: "a-super-secret-key-for-ci" # pragma: allowlist secret
+        ISSUER: "https://test.api.com"
+        AUDIENCE: "https://test.frontend.com"
+      run: pytest
