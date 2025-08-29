@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.users import User as UserModel
 
-pytestmark = pytest.mark.anyio
+pytestmark = pytest.mark.asyncio
 
 @pytest.fixture
 async def logged_in_user_tokens(client: AsyncClient, created_test_user: dict, test_user_credentials: dict) -> dict:

@@ -6,7 +6,7 @@ from sqlalchemy import select
 
 from src.models.users import User as UserModel
 
-pytestmark = pytest.mark.anyio
+pytestmark = pytest.mark.asyncio
 
 class TestUserCreationAndAuth:
     """
