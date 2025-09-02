@@ -16,8 +16,6 @@ __pycache__/
 pytest.ini
 .pre-commit-config.yaml
 .secrets.baseline
-alembic.ini
-alembic/
 
 # Development dependencies
 requirements-dev.txt
