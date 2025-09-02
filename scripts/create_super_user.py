@@ -2,26 +2,23 @@ import os
 from dotenv import load_dotenv
 
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from src.auth.dependencies import get_user
-from src.services.authentication.service import get_password_hash
+from src.services.authentication.service import get_password_hash, get_user
 from src.models.users import User as UserModel, UserRole
 
 # Load environment variables from .env file
 load_dotenv()
 
 # Constants for the admin user credentials
-ADMIN_USER = "SuperUser"
-ADMIN_PASSWORD = "Test12345$" # pragma: allowlist secret
+ADMIN_USER = os.getenv("ADMIN_USER", "SuperUser")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "Test12345$") # pragma: allowlist secret
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Retrieve the database URL from environment variables
-local_db_url = os.getenv("DATABASE_URL_ALEMBIC")
-
-if not local_db_url:
-    print("ERROR: The DATABASE_URL_ALEMBIC enviroment variable is not defined in the .env file")
-    exit()
+if not DATABASE_URL:
+    print("CRITICAL ERROR: The DATABASE_URL environment variable is not set.")
+    exit(1)
     
 # Create the asynchronous SQLAlchemy engine and session factory
-engine = create_async_engine(local_db_url)
+engine = create_async_engine(DATABASE_URL)
 SessionLocal = async_sessionmaker(autocommit = False, autoflush = False, bind = engine)   
 
 async def create_admin_user():
