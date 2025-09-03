@@ -70,7 +70,8 @@ apirestful-ecommerce/
 ├── alembic.ini                # Alembic configuration file
 ├── docker-compose.yml         # Container orchestration
 ├── Dockerfile                 # Application image definition
-├── LICENSE                
+├── entrypoint.sh              # Container entrypoint script
+├── LICENSE
 ├── pytest.ini                 # Pytest configuration file
 ├── README.md                  
 ├── requirements.txt           # Production dependencies
@@ -140,7 +141,7 @@ Follow these steps to set up and run the project in your local environment.
     ```
 
 6.  **Start the services with Docker Compose (Recommended Method):**
-    This command will build the image, create the containers, and apply the database migrations.
+    This command will build the Docker image, create the containers for the API and the database, and start the services. The API service is configured to automatically run database migrations with Alembic before launching the Uvicorn server.
     ```bash
     docker-compose up --build
     ```
@@ -173,14 +174,17 @@ While you can authenticate directly within the Swagger UI, the following GIF use
 - Using this token in the **`Authorization: Bearer <token>`** header for all subsequent requests to protected endpoints.
 
 ### Creating a Superuser
-To access the admin endpoints, you must first create a superuser. With the containers running, open a new terminal and run:
-
+#### For Local Development
+To create a superuser while working on your local machine, open a new terminal with the containers running and run:
 ```bash
 docker-compose exec web python -m scripts.create_super_user
 ```
-This will create a user with the following default credentials:
-*   **Username:** `SuperUser`
-*   **Password:** `Test12345$`
+This will create a user with the default credentials defined in the script.
+
+#### In Production (Render)
+The superuser creation process is **fully automated**. On every deployment, the `entrypoint.sh` script runs `scripts/create_super_user.py`. This script will create an admin user if one does not already exist, using the credentials defined in the `ADMIN_USER` and `ADMIN_PASSWORD` environment variables.
+
+---
 
 ### Database Management
 The project uses Alembic for migrations. To create a new migration after modifying the models in `src/models/`:
@@ -213,6 +217,18 @@ The test suite is designed to run locally against a temporary test database, ens
     pytest
     ```
     `pytest` will connect to the running database, create a temporary `test_...` database, run all tests, and delete it upon completion.
+
+---
+
+### **Deployment**
+
+This API has been deployed to the cloud and is fully operational.
+
+*   **Platform:** Render
+*   **Live API URL:** [https://apirestful-ecommerce.onrender.com](https://apirestful-ecommerce.onrender.com)
+*   **Interactive Documentation:** [https://apirestful-ecommerce.onrender.com/docs](https://apirestful-ecommerce.onrender.com/docs)
+
+The deployment strategy is containerized using Docker. On every startup, the container's `entrypoint.sh` script prepares the environment by automatically running database migrations and creating the superuser before launching the Uvicorn server. This ensures the application starts in a consistent and correct state.
 
 ---
 
