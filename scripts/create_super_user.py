@@ -30,25 +30,24 @@ async def create_admin_user():
     """
     print("Starting script to create an administrator user...")
     async with SessionLocal() as session:
-        
-        # Check if the admin user already exists
-        user = await get_user(ADMIN_USER, session)
-            
-        if user is None:
-            # Hash the admin password
-            hash_password = await get_password_hash(ADMIN_PASSWORD)
+        async with session.begin():
+            # Check if the admin user already exists
+            user = await get_user(ADMIN_USER, session)
                 
-            # Create a new admin user instance
-            new_admin = UserModel(username = ADMIN_USER, hashed_password = hash_password, role=UserRole.admin)
-                
-            session.add(new_admin)
-            await session.commit()
-            
-            await session.refresh(new_admin)
-            
-            print(f'SuperUsuario {ADMIN_USER} create')
-        else:
-            print("The user already exists")
+            if user is None:
+                # Hash the admin password
+                hash_password = await get_password_hash(ADMIN_PASSWORD)
+                    
+                # Create a new admin user instance
+                new_admin = UserModel(username = ADMIN_USER, hashed_password = hash_password, role=UserRole.admin)
+                    
+                session.add(new_admin)
+                session.flush()
+                session.refresh(new_admin)
+                 
+                print(f'SuperUsuario {ADMIN_USER} create')
+            else:
+                print("The user already exists")
             
 if __name__ == "__main__":
     """

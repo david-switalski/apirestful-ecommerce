@@ -13,15 +13,14 @@ SessionLocal = async_sessionmaker(
 
 async def get_db():
     """
-    Dependency generator that provides a SQLAlchemy async session.
+    Dependency generator that provides a SQLAlchemy asynchronous session.
 
     Yields:
-        AsyncSession: An instance of the database session.
-    Ensures:
-        The session is closed after use.
+        AsyncSession: An active asynchronous database session for use in FastAPI dependencies.
+
+    This function ensures that the session is properly opened and closed
+    for each request, maintaining database connection integrity.
     """
     async with SessionLocal() as session:
-        try:
+        async with session.begin():
             yield session
-        finally:
-            await session.close()

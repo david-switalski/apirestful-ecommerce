@@ -176,7 +176,6 @@ async def get_login_for_access_token(form_data:OAuth2PasswordRequestForm, db:Db_
     
     # Store the hashed refresh token in the database
     user.hashed_refresh_token = await get_password_hash(refresh_token)
-    await db.commit()
     
     return Token(access_token=access_token, refresh_token=refresh_token, token_type="bearer")
     
@@ -222,7 +221,6 @@ async def get_refresh_access_token(request: RefreshTokenRequest, db: Db_session,
 
         new_refresh_token = await create_refresh_token(data={"sub": username_for_token, "type": "refresh"})
         user.hashed_refresh_token = await get_password_hash(new_refresh_token)
-        await db.commit()
 
         new_access_token = await create_access_token(data={"sub": username_for_token, "type": "access"})
 

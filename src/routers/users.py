@@ -74,7 +74,6 @@ async def create_user(user : CreateUser, db: Db_session):
         user_model = await get_create_user(user, db)
         return user_model
     except IntegrityError:
-        await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, 
             detail=f"User with usernmae '{user.username}' already exists")
@@ -172,6 +171,5 @@ async def logout(
     Logout the current user by invalidating their refresh token.
     """
     current_user.hashed_refresh_token = None
-    await db.commit()
     
     return {'message':'Logout success'}

@@ -47,7 +47,7 @@ async def get_created_product(product: CreateProduct, db: AsyncSession):
     """
     created_product = ProductModel(**product.model_dump())
     db.add(created_product)
-    await db.commit()
+    await db.flush()
     await db.refresh(created_product)
     return created_product
 
@@ -71,7 +71,7 @@ async def get_updated_product(id: int, product: UpdateProduct, db: AsyncSession)
         # Update only the fields provided in the update_data
         for key, value in update_data.items():
             setattr(updated_product, key, value)
-        await db.commit()
+        await db.flush()
         await db.refresh(updated_product)
 
     return updated_product    
@@ -92,6 +92,6 @@ async def get_deleted_product(id: int, db: AsyncSession):
 
     if deleted_product is not None:
         await db.delete(deleted_product)
-        await db.commit()
+        await db.flush()
 
     return deleted_product

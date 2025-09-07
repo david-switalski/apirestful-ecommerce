@@ -18,6 +18,7 @@ async def get_user_by_id(db: AsyncSession, user_id: int):
     """
     result = await db.execute(select(UserModel).where(UserModel.id == user_id))
     user = result.scalars().first()
+    
     return user
 
 async def get_all_users(db: AsyncSession, limit, offset):
@@ -34,6 +35,7 @@ async def get_all_users(db: AsyncSession, limit, offset):
     """
     result = await db.execute(select(UserModel).limit(limit).offset(offset))
     users = result.scalars()
+    
     return users
 
 async def get_user_me(db: AsyncSession, current_user):
@@ -49,6 +51,7 @@ async def get_user_me(db: AsyncSession, current_user):
     """
     result = await db.execute(select(UserModel).where(UserModel.id == current_user.id))
     user = result.scalars().first()
+    
     return user
 
 async def get_create_user(user: CreateUser, db: AsyncSession):
@@ -65,10 +68,13 @@ async def get_create_user(user: CreateUser, db: AsyncSession):
     user_data = user.model_dump(exclude={'password'})
     plain_password = user.password.get_secret_value()
     hashed_pass = await get_password_hash(plain_password)
+    
     model = UserModel(**user_data, hashed_password=hashed_pass)
+    
     db.add(model)
-    await db.commit()
+    await db.flush()
     await db.refresh(model)
+    
     return model
 
 async def updated_new_role(username: str, role: UserRole, db: AsyncSession):
@@ -101,8 +107,9 @@ async def updated_new_role(username: str, role: UserRole, db: AsyncSession):
         raise LastAdminError("The last administrator cannot be demoted")
 
     user_to_change.role = role
-    await db.commit()
+    await db.flush()
     await db.refresh(user_to_change)
+    
     return user_to_change
 
 async def get_updated_user(id: int, user: UpdateUser, db: AsyncSession):
@@ -131,7 +138,7 @@ async def get_updated_user(id: int, user: UpdateUser, db: AsyncSession):
         for key, value in update_data.items():
             setattr(user_db, key, value)
 
-        await db.commit()
+        await db.flush()
         await db.refresh(user_db)
 
     return user_db
@@ -163,5 +170,6 @@ async def get_deleted_user(id: int, db: AsyncSession):
         raise LastAdminError("The last administrator cannot be deleted")
 
     await db.delete(deleted_user)
-    await db.commit()
+    await db.flush()
+    
     return deleted_user
