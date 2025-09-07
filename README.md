@@ -141,12 +141,34 @@ Follow these steps to set up and run the project in your local environment.
     ```
 
 6.  **Start the services with Docker Compose (Recommended Method):**
-    This command will build the Docker image, create the containers for the API and the database, and start the services. The API service is configured to automatically run database migrations with Alembic before launching the Uvicorn server.
-    ```bash
-    docker-compose up --build
-    ```
+    This process involves two main steps: first building the Docker image with your latest code, and then starting the containers.
 
-The API will be available at `http://localhost:8000`.
+    *   **Step 1: Build the Image**
+        This command builds the `web` service's Docker image based on the Dockerfile. It's best to run this whenever you make changes to your code or dependencies.
+        ```bash
+        docker-compose build
+        ```
+
+    *   **Step 2: Start the Services**
+        Once the image is built, this command starts the API and database containers.
+        ```bash
+        docker-compose up
+        ```
+    The API will be available at `http://localhost:8000`. You will see the application logs directly in your terminal. Press `CTRL+C` to stop the services.
+
+    *   **Tip: Running in the Background**
+
+        To run the services in the background and free up your terminal, use the "-d" (detached) flag:
+        ```bash
+        docker-compose up -d
+        ```
+
+    *   **Stopping the Services**
+
+        To stop and remove the containers cleanly, run:
+        ```bash
+        docker-compose down
+        ```
 
 ---
 
@@ -174,15 +196,15 @@ While you can authenticate directly within the Swagger UI, the following GIF use
 - Using this token in the **`Authorization: Bearer <token>`** header for all subsequent requests to protected endpoints.
 
 ### Creating a Superuser
-#### For Local Development
-To create a superuser while working on your local machine, open a new terminal with the containers running and run:
-```bash
-docker-compose exec web python -m scripts.create_super_user
-```
-This will create a user with the default credentials defined in the script.
+*   #### For Local Development
+    To create a superuser while working on your local machine, open a new terminal with the containers running and run:
+    ```bash
+    docker-compose exec web python -m scripts.create_super_user
+    ```
+    This will create a user with the default credentials defined in the script.
 
-#### In Production (Render)
-The superuser creation process is **fully automated**. On every deployment, the `entrypoint.sh` script runs `scripts/create_super_user.py`. This script will create an admin user if one does not already exist, using the credentials defined in the `ADMIN_USER` and `ADMIN_PASSWORD` environment variables.
+*   #### In Production (Render)
+    The superuser creation process is **fully automated**. On every deployment, the `entrypoint.sh` script runs `scripts/create_super_user.py`. This script will create an admin user if one does not already exist, using the credentials defined in the `ADMIN_USER` and `ADMIN_PASSWORD` environment variables.
 
 ---
 
@@ -200,7 +222,7 @@ docker-compose exec web alembic upgrade head
 
 ## Running Tests
 
-The test suite is designed to run locally against a temporary test database, ensuring your development data is not affected.
+The test suite runs against an isolated, temporary database that is created and destroyed automatically for each test session. This guarantees that your development data is never affected and that tests are always run in a clean, predictable environment.
 
 **Prerequisite:** The Docker database container must be running.
 
