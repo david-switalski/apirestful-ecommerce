@@ -1,6 +1,5 @@
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
-from typing import Optional
 
 class Product(BaseModel):
     """
@@ -60,8 +59,8 @@ class ReadProduct(Product):
     """
     model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
     id: int
-    created_at: Optional[datetime]
-    updated_at: Optional[datetime]
+    created_at: datetime | None
+    updated_at: datetime | None
 
 class ReadAllProducts(BaseModel):
     """

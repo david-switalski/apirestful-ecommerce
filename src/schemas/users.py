@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict, SecretStr, field_validator
 from datetime import datetime
-from typing import Optional
+
 import re
 
 from src.models.users import UserRole
@@ -62,8 +62,8 @@ class ReadUser(BaseModel):
     username: str
     available: bool
     role: UserRole
-    created_at: Optional[datetime]
-    updated_at: Optional[datetime]
+    created_at: datetime | None
+    updated_at: datetime | None
 
 class ReadAllUsers(BaseModel):
     """
