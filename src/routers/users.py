@@ -9,21 +9,18 @@ from src.models.users import User as UserModel
 
 from src.data_base.dependencies import Db_session
 
-from src.auth.dependencies import get_current_user, require_role, get_current_active_user
+from src.auth.dependencies import get_current_user, Current_user, Admin_user
 from src.services.authentication.service import get_login_for_access_token, get_refresh_access_token
 from src.services.users.service import updated_new_role, get_user_by_id, get_all_users, get_user_me, get_create_user, get_updated_user, get_deleted_user
 
 router = APIRouter(prefix = "/users")
-
-# Annotated dependency for requiring an admin user role
-Admin_user = Annotated[UserModel, Depends(require_role("admin"))]
 
 @router.get("/", tags = ["Users"], response_model=list[ReadAllUsers])
 async def read_all_users(
     db: Db_session,
     admin_user: Admin_user,
     limit: int=20, 
-    offset: int=0
+    offset: int=0   
 ):
     """
     Retrieve a list of all users with pagination.
@@ -38,7 +35,7 @@ async def read_all_users(
 
 @router.get("/me", tags = ["Users"], response_model=ReadUser)
 async def read_users_me(
-    current_user: Annotated[UserModel, Depends(get_current_active_user)], 
+    current_user: Current_user, 
     db: Db_session
 ): 
     """

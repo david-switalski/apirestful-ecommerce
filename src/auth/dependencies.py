@@ -125,3 +125,9 @@ def require_role(required_role:str):
         return current_user
     
     return role_checker
+
+# Dependency that provides the currently authenticated and active user
+Current_user = Annotated[UserModel, Depends(get_current_active_user)]
+
+# Annotated dependency for requiring an admin user role
+Admin_user = Annotated[UserModel, Depends(require_role("admin"))]
