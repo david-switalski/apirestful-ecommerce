@@ -1,4 +1,5 @@
 from sqlalchemy import Column, String, BigInteger, Boolean, DateTime, func, Enum
+from sqlalchemy.orm import relationship
 from src.data_base.base_class import Base
 from datetime import datetime
 import enum
@@ -17,3 +18,5 @@ class User(Base):
     
     created_at = Column(DateTime(timezone=True), server_default=func.now(), default=datetime.utcnow, index=True)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), default=datetime.utcnow, index=True)
+    
+    orders = relationship("Order", back_populates="user",  cascade="all, delete, delete-orphan")

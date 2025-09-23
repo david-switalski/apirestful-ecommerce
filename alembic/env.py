@@ -11,7 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 from src.data_base.base_class import Base
 from src.models.products import Product 
-from src.models.users import User 
+from src.models.users import User
+from src.models.orders import Order, OrderItem
 
 
 load_dotenv()

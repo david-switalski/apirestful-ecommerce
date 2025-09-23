@@ -1,4 +1,5 @@
 from sqlalchemy import Column, String, BigInteger, Integer, Numeric, Boolean, DateTime, Text, func
+from sqlalchemy.orm import relationship
 from src.data_base.base_class import Base
 from datetime import datetime
 
@@ -13,5 +14,5 @@ class Product(Base):
     
     created_at = Column(DateTime(timezone=True), server_default=func.now(), default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), default=datetime.utcnow)
-    
-    
+
+    order_items = relationship("OrderItem", back_populates="product")
