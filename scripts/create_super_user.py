@@ -42,8 +42,8 @@ async def create_admin_user():
                 new_admin = UserModel(username = ADMIN_USER, hashed_password = hash_password, role=UserRole.admin)
                     
                 session.add(new_admin)
-                session.flush()
-                session.refresh(new_admin)
+                await session.flush()
+                await session.refresh(new_admin)
                  
                 print(f'SuperUsuario {ADMIN_USER} create')
             else:
