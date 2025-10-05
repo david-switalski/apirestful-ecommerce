@@ -1,9 +1,14 @@
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
+from sqlalchemy.exc import IntegrityError
+
 from src.models.products import Product as ProductModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.schemas.products import CreateProduct, UpdateProduct
 
-async def get_product_by_id(db: AsyncSession, product_id: int):
+from src.core.exceptions import ProductNameAlreadyExistsError, ProductInUseError
+
+async def get_product_by_id(db: AsyncSession, product_id: int) -> ProductModel | None:
     """
     Retrieve a single product by its ID.
 
@@ -14,11 +19,10 @@ async def get_product_by_id(db: AsyncSession, product_id: int):
     Returns:
         ProductModel | None: The product instance if found, otherwise None.
     """
-    result = await db.execute(select(ProductModel).where(ProductModel.id == product_id))
-    product = result.scalars().first()
-    return product
+    product = await db.execute(select(ProductModel).where(ProductModel.id == product_id))
+    return product.scalars().first()
 
-async def get_all_products(db: AsyncSession, limit, offset):
+async def get_all_products(db: AsyncSession, limit, offset) -> list[ProductModel]:
     """
     Retrieve all products with pagination.
 
@@ -30,11 +34,10 @@ async def get_all_products(db: AsyncSession, limit, offset):
     Returns:
         list[ProductModel]: List of product instances.
     """
-    result = await db.execute(select(ProductModel).limit(limit).offset(offset))
-    all_products = result.scalars().all()
-    return all_products
+    products = await db.execute(select(ProductModel).limit(limit).offset(offset))
+    return products.scalars().all()
 
-async def get_created_product(product: CreateProduct, db: AsyncSession):
+async def get_created_product(product: CreateProduct, db: AsyncSession) -> ProductModel:
     """
     Create a new product in the database.
 
@@ -44,14 +47,21 @@ async def get_created_product(product: CreateProduct, db: AsyncSession):
 
     Returns:
         ProductModel: The newly created product instance.
+        
+    Raises:
+        ProductNameAlreadyExistsError: If the product name is already in use.
     """
     created_product = ProductModel(**product.model_dump())
     db.add(created_product)
-    await db.flush()
+    try:
+        await db.flush()  
+    except IntegrityError:
+        raise ProductNameAlreadyExistsError(name=product.name)
+    
     await db.refresh(created_product)
     return created_product
 
-async def get_updated_product(id: int, product: UpdateProduct, db: AsyncSession):
+async def get_updated_product(id: int, product: UpdateProduct, db: AsyncSession) -> ProductModel | None:
     """
     Update an existing product by its ID.
 
@@ -76,7 +86,7 @@ async def get_updated_product(id: int, product: UpdateProduct, db: AsyncSession)
 
     return updated_product    
 
-async def get_deleted_product(id: int, db: AsyncSession):
+async def get_deleted_product(id: int, db: AsyncSession) -> ProductModel | None:
     """
     Delete a product by its ID.
 
@@ -86,12 +96,20 @@ async def get_deleted_product(id: int, db: AsyncSession):
 
     Returns:
         ProductModel | None: The deleted product instance if found, otherwise None.
+        
+    Raises:
+        ProductInUseError: If the product is part of an existing order.
     """
-    result = await db.execute(select(ProductModel).where(ProductModel.id == id))
+    stmt = select(ProductModel).options(selectinload(ProductModel.order_items)).where(ProductModel.id == id)
+    result = await db.execute(stmt)
     deleted_product = result.scalars().first()
 
-    if deleted_product is not None:
-        await db.delete(deleted_product)
-        await db.flush()
+    if deleted_product is None:
+        return None
 
+    if deleted_product.order_items:
+        raise ProductInUseError(product_name=deleted_product.name)
+
+    await db.delete(deleted_product)
+    await db.flush()
     return deleted_product

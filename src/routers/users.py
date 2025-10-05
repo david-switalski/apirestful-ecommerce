@@ -2,7 +2,6 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.exc import IntegrityError
 
 from src.schemas.users import ReadUser, CreateUser, UpdateUser, Token, ReadAllUsers, RefreshTokenRequest, UserRoleCurrent
 from src.models.users import User as UserModel
@@ -11,7 +10,7 @@ from src.data_base.dependencies import Db_session
 
 from src.auth.dependencies import get_current_user, Current_user, Admin_user
 from src.services.authentication.service import get_login_for_access_token, get_refresh_access_token
-from src.services.users.service import updated_new_role, get_user_by_id, get_all_users, get_user_me, get_create_user, get_updated_user, get_deleted_user
+from src.services.users.service import updated_new_role, get_user_by_id, get_all_users, get_user_me, get_create_user, get_updated_user, get_delete_user
 
 router = APIRouter(prefix = "/users")
 
@@ -27,11 +26,8 @@ async def read_all_users(
     Only accessible by admin users.
     """
     users = await get_all_users(db, limit=limit, offset=offset)
-    
-    if users is not None:
-        return users
-    else:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Users not found")
+
+    return users
 
 @router.get("/me", tags = ["Users"], response_model=ReadUser)
 async def read_users_me(
@@ -61,19 +57,15 @@ async def read_user(user_id : int, db: Db_session, admin_user: Admin_user):
     else:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-@router.post("/", tags = ["Users"], response_model=ReadUser)
+@router.post("/", tags = ["Users"], response_model=ReadUser,status_code=status.HTTP_201_CREATED)
 async def create_user(user : CreateUser, db: Db_session):
     """
     Create a new user.
     Returns the created user or raises an error if the username already exists.
     """
-    try:
-        user_model = await get_create_user(user, db)
-        return user_model
-    except IntegrityError:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, 
-            detail=f"User with usernmae '{user.username}' already exists")
+    new_user = await get_create_user(user, db)
+
+    return new_user
 
 @router.patch("/admin/users/{username}/role", tags = ["Role"], response_model=ReadUser)
 async def new_role_user(username: str, role: UserRoleCurrent, admin_user: Admin_user, db: Db_session):
@@ -82,12 +74,8 @@ async def new_role_user(username: str, role: UserRoleCurrent, admin_user: Admin_
     Only accessible by admin users.
     """
     new_user_role = await updated_new_role(username, role.role, db)
-    
     if new_user_role is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f'User with username {username} not found'
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'User with username {username} not found')
     
     return new_user_role
     
@@ -117,13 +105,9 @@ async def delete_user(
     Delete a user by their ID.
     Only accessible by admin users.
     """
-    deleted_user = await get_deleted_user(user_id, db)
-    
+    deleted_user = await get_delete_user(user_id, db)
     if deleted_user is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
-            detail=f"User with ID {user_id} not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User with ID {user_id} not found")
     
     return None
     
@@ -139,7 +123,6 @@ async def login_for_access_token(
     
     return token
     
-
 @router.post("/token/refresh", tags = ["Token"], response_model=Token)
 async def refresh_access_token(
     request: RefreshTokenRequest, 
@@ -158,7 +141,6 @@ async def refresh_access_token(
     
     return token
     
-
 @router.post("/logout", status_code=status.HTTP_200_OK)
 async def logout(
     db: Db_session,

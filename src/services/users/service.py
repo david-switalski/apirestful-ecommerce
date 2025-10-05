@@ -1,11 +1,16 @@
 from sqlalchemy import select, func
-from src.models.users import User as UserModel, UserRole
+from sqlalchemy.orm import selectinload
+
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import IntegrityError
+
+from src.models.users import User as UserModel, UserRole
+
 from src.schemas.users import CreateUser, UpdateUser
 from src.services.authentication.service import get_password_hash, get_user
-from src.core.exceptions import LastAdminError, UselessOperationError
+from src.core.exceptions import LastAdminError, UselessOperationError, UsernameAlreadyExistsError, UserHasOrdersError
 
-async def get_user_by_id(db: AsyncSession, user_id: int):
+async def get_user_by_id(db: AsyncSession, user_id: int) -> UserModel | None:
     """
     Retrieve a user by their unique ID.
 
@@ -16,12 +21,11 @@ async def get_user_by_id(db: AsyncSession, user_id: int):
     Returns:
         UserModel | None: The user object if found, otherwise None.
     """
-    result = await db.execute(select(UserModel).where(UserModel.id == user_id))
-    user = result.scalars().first()
+    user = await db.execute(select(UserModel).where(UserModel.id == user_id))
     
-    return user
+    return user.scalars().first()
 
-async def get_all_users(db: AsyncSession, limit, offset):
+async def get_all_users(db: AsyncSession, limit, offset) -> list[UserModel]:
     """
     Retrieve all users with pagination.
 
@@ -33,12 +37,11 @@ async def get_all_users(db: AsyncSession, limit, offset):
     Returns:
         Sequence[UserModel]: List of user objects.
     """
-    result = await db.execute(select(UserModel).limit(limit).offset(offset))
-    users = result.scalars()
-    
-    return users
+    users = await db.execute(select(UserModel).limit(limit).offset(offset))
+     
+    return users.scalars().all()
 
-async def get_user_me(db: AsyncSession, current_user):
+async def get_user_me(db: AsyncSession, current_user) -> UserModel:
     """
     Retrieve the current authenticated user.
 
@@ -49,12 +52,11 @@ async def get_user_me(db: AsyncSession, current_user):
     Returns:
         UserModel | None: The user object if found, otherwise None.
     """
-    result = await db.execute(select(UserModel).where(UserModel.id == current_user.id))
-    user = result.scalars().first()
+    user = await db.execute(select(UserModel).where(UserModel.id == current_user.id))
     
-    return user
+    return user.scalars().first()
 
-async def get_create_user(user: CreateUser, db: AsyncSession):
+async def get_create_user(user: CreateUser, db: AsyncSession) -> UserModel:
     """
     Create a new user in the database.
 
@@ -64,20 +66,25 @@ async def get_create_user(user: CreateUser, db: AsyncSession):
 
     Returns:
         UserModel: The newly created user object.
+        
+    Raises:
+        UsernameAlreadyExistsError: If the username is already taken.
     """
     user_data = user.model_dump(exclude={'password'})
     plain_password = user.password.get_secret_value()
     hashed_pass = await get_password_hash(plain_password)
     
     model = UserModel(**user_data, hashed_password=hashed_pass)
-    
     db.add(model)
-    await db.flush()
-    await db.refresh(model)
+    try:
+        await db.flush()
+    except IntegrityError:
+        raise UsernameAlreadyExistsError(username=user.username)
     
+    await db.refresh(model)
     return model
 
-async def updated_new_role(username: str, role: UserRole, db: AsyncSession):
+async def updated_new_role(username: str, role: UserRole, db: AsyncSession) -> UserModel:
     """
     Update the role of a user, ensuring at least one admin remains.
 
@@ -97,22 +104,21 @@ async def updated_new_role(username: str, role: UserRole, db: AsyncSession):
     if user_to_change is None:
         return None
 
-    count_admins_user = await db.execute(select(func.count(UserModel.role)).where(UserModel.role == "admin"))
+    count_admins_user = await db.execute(select(func.count(UserModel.id)).where(UserModel.role == UserRole.admin))
     total_admins = count_admins_user.scalar_one()
 
     if user_to_change.role == role:
-        raise UselessOperationError("The user already has this role")
+        raise UselessOperationError(username=username)
 
-    if user_to_change.role == "admin" and role == "user" and total_admins <= 1:
-        raise LastAdminError("The last administrator cannot be demoted")
+    if user_to_change.role == UserRole.admin and role == UserRole.user and total_admins <= 1:
+        raise LastAdminError(username=username, action="demote")
 
     user_to_change.role = role
     await db.flush()
     await db.refresh(user_to_change)
-    
     return user_to_change
 
-async def get_updated_user(id: int, user: UpdateUser, db: AsyncSession):
+async def get_updated_user(id: int, user: UpdateUser, db: AsyncSession) -> UserModel:
     """
     Update an existing user's information.
 
@@ -143,7 +149,7 @@ async def get_updated_user(id: int, user: UpdateUser, db: AsyncSession):
 
     return user_db
 
-async def get_deleted_user(id: int, db: AsyncSession):
+async def get_delete_user(id: int, db: AsyncSession) -> UserModel | None:
     """
     Delete a user by ID, ensuring at least one admin remains.
 
@@ -153,23 +159,27 @@ async def get_deleted_user(id: int, db: AsyncSession):
 
     Raises:
         LastAdminError: If attempting to delete the last admin.
+        UserHasOrdersError: If the user has existing orders.
 
     Returns:
         UserModel | None: The deleted user object, or None if not found.
     """
-    result = await db.execute(select(UserModel).where(UserModel.id == id))
+    stmt = select(UserModel).options(selectinload(UserModel.orders)).where(UserModel.id == id)
+    result = await db.execute(stmt)
     deleted_user = result.scalars().first()
 
     if deleted_user is None:
         return None
 
-    count_admins_user = await db.execute(select(func.count(UserModel.role)).where(UserModel.role == "admin"))
+    if deleted_user.orders:
+        raise UserHasOrdersError(username=deleted_user.username)
+
+    count_admins_user = await db.execute(select(func.count(UserModel.id)).where(UserModel.role == UserRole.admin))
     total_admins = count_admins_user.scalar_one()
 
-    if deleted_user.role == "admin" and total_admins <= 1:
-        raise LastAdminError("The last administrator cannot be deleted")
+    if deleted_user.role == UserRole.admin and total_admins <= 1:
+        raise LastAdminError(username=deleted_user.username, action="delete")
 
     await db.delete(deleted_user)
     await db.flush()
-    
     return deleted_user
