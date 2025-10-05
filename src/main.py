@@ -11,7 +11,7 @@ from src.core.exceptions import (
 from fastapi.middleware.cors import CORSMiddleware
 from src.routers.products import router as products_router
 from src.routers.users import router as users_router
-
+from src.routers.orders import router as orders_router
 
 # Create FastAPI application instance with project metadata
 app = FastAPI(
@@ -19,8 +19,9 @@ app = FastAPI(
     version = settings.PROJECT_VERSION
 )
 
-# Include routers for products and users endpoints
+# Include routers for products, users and orders endpoints
 app.include_router(products_router)
+app.include_router(orders_router)
 app.include_router(users_router)
 
 # MIDDLEWARE & ROUTERS
