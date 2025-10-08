@@ -100,6 +100,9 @@ async def updated_new_role(username: str, role: UserRole, db: AsyncSession) -> U
     Returns:
         UserModel | None: The updated user object, or None if not found.
     """
+    admin_users_query = select(UserModel).where(UserModel.role == UserRole.admin).with_for_update()
+    await db.execute(admin_users_query)
+    
     user_to_change = await get_user(username, db)
     if user_to_change is None:
         return None
@@ -164,22 +167,24 @@ async def get_delete_user(id: int, db: AsyncSession) -> UserModel | None:
     Returns:
         UserModel | None: The deleted user object, or None if not found.
     """
-    stmt = select(UserModel).options(selectinload(UserModel.orders)).where(UserModel.id == id)
+    stmt = select(UserModel).options(selectinload(UserModel.orders)).where(UserModel.id == id).with_for_update()
     result = await db.execute(stmt)
-    deleted_user = result.scalars().first()
+    user_to_delete = result.scalars().first()
 
-    if deleted_user is None:
+    if user_to_delete is None:
         return None
 
-    if deleted_user.orders:
-        raise UserHasOrdersError(username=deleted_user.username)
+    if user_to_delete.orders:
+        raise UserHasOrdersError(username=user_to_delete.username)
+    
+    if user_to_delete.role == UserRole.admin:
+        count_admins_stmt = select(func.count(UserModel.id)).where(UserModel.role == UserRole.admin)
+        total_admins = (await db.execute(count_admins_stmt)).scalar_one()
 
-    count_admins_user = await db.execute(select(func.count(UserModel.id)).where(UserModel.role == UserRole.admin))
-    total_admins = count_admins_user.scalar_one()
+        if total_admins <= 1:
+            raise LastAdminError(username=user_to_delete.username, action="delete")
 
-    if deleted_user.role == UserRole.admin and total_admins <= 1:
-        raise LastAdminError(username=deleted_user.username, action="delete")
+    await db.delete(user_to_delete)
+    await db.flush()  
 
-    await db.delete(deleted_user)
-    await db.flush()
-    return deleted_user
+    return user_to_delete

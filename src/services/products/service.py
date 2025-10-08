@@ -100,7 +100,7 @@ async def get_deleted_product(id: int, db: AsyncSession) -> ProductModel | None:
     Raises:
         ProductInUseError: If the product is part of an existing order.
     """
-    stmt = select(ProductModel).options(selectinload(ProductModel.order_items)).where(ProductModel.id == id)
+    stmt = select(ProductModel).options(selectinload(ProductModel.order_items)).where(ProductModel.id == id).with_for_update()
     result = await db.execute(stmt)
     deleted_product = result.scalars().first()
 
