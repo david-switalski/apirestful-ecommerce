@@ -20,6 +20,13 @@ class Settings(BaseSettings):
     ISSUER: str                                   # JWT issuer
     AUDIENCE: str                                 # JWT audience
 
+    REDIS_PASSWORD: str
+    REDIS_HOST: str
+    REDIS_PORT: int
+    
+    REDIS_DB: int
+    
+    
     # Configuration for loading environment variables from .env file
     model_config = SettingsConfigDict(env_file='.env', extra='ignore')
         
