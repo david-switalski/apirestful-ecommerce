@@ -10,13 +10,14 @@
 ---
 
 ## Overview
-This project is a robust and scalable RESTful API designed for an E-Commerce platform. Built with **FastAPI** and **SQLAlchemy** in a fully asynchronous environment, it provides a solid foundation for managing products, users, orders, and authentication. The API is fully containerized with Docker, ensuring a simple and consistent deployment across any environment.
+This project is a robust and scalable RESTful API designed for an E-Commerce platform. Built with **FastAPI** and **SQLAlchemy** in a fully asynchronous environment, it provides a solid foundation for managing products, users, orders, and authentication. It leverages **Redis** for high-performance caching to reduce latency and database load. The entire stack is fully containerized with a production-optimized Docker setup, ensuring a simple and consistent deployment across any environment.
 
 ---
 
 ## Features
 
 *   **Asynchronous Architecture:** High performance and concurrency thanks to FastAPI and `asyncpg`.
+*   **High-Performance Caching:** Integrates **Redis** to reduce database load and significantly decrease response times for frequent queries.
 *   **Secure JWT Authentication:** Implements `access tokens` and `refresh tokens` for secure and flexible session management.
 *   **Role-Based Authorization:** Protected endpoints that distinguish between users (`user`) and administrators (`admin`), ensuring that only authorized personnel can perform critical operations.
 *   **Full Product Management (CRUD):** Endpoints to create, read, update, and delete products, with restricted access for administrators.
@@ -33,7 +34,7 @@ This project is a robust and scalable RESTful API designed for an E-Commerce pla
 
 ### Core Development
 * **Programming Language:** Python 3.12+
-* **Backend Framework:** FastAPI, Uvicorn
+* **Backend Framework:** FastAPI, Gunicorn (with Uvicorn workers)
 * **HTTP Client:** httpx
 
 ### Data Management
@@ -43,7 +44,7 @@ This project is a robust and scalable RESTful API designed for an E-Commerce pla
 
 ### Configuration & Security
 * **Authentication:** PyJWT, passlib, bcrypt
-* **Data Validation:** Pydantic, **email-validator**
+* **Data Validation:** Pydantic
 * **Environment Variables:** **python-dotenv**
 
 ### Development & DevOps Workflow
@@ -72,9 +73,12 @@ apirestful-ecommerce/
 │       └── ci.yml
 ├── alembic/                   # Alembic scripts and configuration for migrations
 ├── assets/                    # Static assets (e.g., images, fonts, gifs)
+├── redis/                     # Redis configuration
+│   └── redis.conf
 ├── scripts/                   # Utility scripts (e.g., create superuser)
 ├── src/                       # Main source code directory
 │   ├── auth/                  # Authentication logic and security dependencies
+│   ├── cache/                 # Caching logic and Redis client setup
 │   ├── core/                  # Core configuration and custom exceptions
 │   ├── data_base/             # DB session setup and base classes
 │   ├── models/                # SQLAlchemy models (DB tables)
@@ -97,6 +101,7 @@ apirestful-ecommerce/
 ├── requirements.txt           # Production dependencies
 └── requirements-dev.txt       # Development dependencies
 ```
+
 
 ---
 
@@ -310,7 +315,7 @@ This API has been deployed to the cloud and is fully operational.
 *   **Live API URL:** [https://apirestful-ecommerce.onrender.com](https://apirestful-ecommerce.onrender.com)
 *   **Interactive Documentation:** [https://apirestful-ecommerce.onrender.com/docs](https://apirestful-ecommerce.onrender.com/docs)
 
-The deployment strategy is containerized using Docker. On every startup, the container's `entrypoint.sh` script prepares the environment by automatically running database migrations and creating the superuser before launching the Uvicorn server. This ensures the application starts in a consistent and correct state.
+The deployment strategy is containerized using a production-optimized Docker image. On every startup, the container's `entrypoint.sh` script prepares the environment by automatically running database migrations and creating the superuser before launching the **Gunicorn** server. This ensures the application starts in a consistent and correct state with a production-ready web server.
 
 ---
 
