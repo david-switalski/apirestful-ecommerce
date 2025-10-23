@@ -29,5 +29,8 @@ tests/
 # Documentation and notes that the app doesn't need
 README.md
 
+# Licenses
+LICENSE
+
 # Configuration files for your code editor
 .vscode/

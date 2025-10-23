@@ -2,7 +2,7 @@
 
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/david-switalski/apirestful-ecommerce/ci.yml) ![Codecov](https://img.shields.io/codecov/c/github/david-switalski/apirestful-ecommerce) ![GitHub License](https://img.shields.io/github/license/david-switalski/apirestful-ecommerce)
 
-![Python](https://img.shields.io/badge/Python-3.12-blue.svg) ![FastAPI](https://img.shields.io/badge/Framework-FastAPI-green.svg) ![Database](https://img.shields.io/badge/Database-PostgreSQL-blue.svg) ![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg) ![Tests](https://img.shields.io/badge/Tests-Pytest-brightgreen.svg)
+![Python](https://img.shields.io/badge/Python-3.12-blue.svg) ![FastAPI](https://img.shields.io/badge/Framework-FastAPI-green.svg) ![Database](https://img.shields.io/badge/Database-PostgreSQL-blue.svg) ![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg) ![Tests](https://img.shields.io/badge/Tests-Pytest-brightgreen.svg) ![Cache](https://img.shields.io/badge/Cache-Redis-red.svg)
 
 
 ![API General Flow](assets/api-flow.gif)
