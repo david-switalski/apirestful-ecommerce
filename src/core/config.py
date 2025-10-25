@@ -6,7 +6,7 @@ class Settings(BaseSettings):
 
     This class loads environment variables and provides strongly-typed
     access to configuration values such as project metadata, database URL,
-    JWT settings, and security parameters.
+    JWT settings, security parameters and cache parameters.
     """
     PROJECT_NAME : str = 'APIRESTFUL E-COMMERCE'  # Name of the project
     PROJECT_VERSION : str = '1.0'                 # Version of the project
@@ -20,11 +20,10 @@ class Settings(BaseSettings):
     ISSUER: str                                   # JWT issuer
     AUDIENCE: str                                 # JWT audience
 
-    REDIS_PASSWORD: str
-    REDIS_HOST: str
-    REDIS_PORT: int
-    
-    REDIS_DB: int
+    REDIS_PASSWORD: str                           # Password for Redis server
+    REDIS_HOST: str                               # Host address for Redis server
+    REDIS_PORT: int                               # Port number for Redis server
+    REDIS_DB: int                                 # Database index for Redis server
     
     
     # Configuration for loading environment variables from .env file
