@@ -69,6 +69,8 @@ class ReadAllUsers(BaseModel):
     """
     Schema for reading a list of users with basic information.
     """
+    model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
+    
     id: int
     username: str
     available: bool

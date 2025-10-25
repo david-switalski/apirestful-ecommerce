@@ -72,6 +72,8 @@ class ReadAllProducts(BaseModel):
         price (float): Price of the product.
         description (str): Description of the product.
     """
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     name: str
     price: float
