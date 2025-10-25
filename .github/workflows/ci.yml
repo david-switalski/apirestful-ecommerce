@@ -24,6 +24,16 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
+      
+      redis:
+        image: redis:7.2-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
 
     steps:
     - name: Check out repository code
@@ -41,11 +51,20 @@ jobs:
 
     - name: Run tests and generate coverage report
       env:
+        # PostgreSQL Test Config
         POSTGRES_USER: testuser
         POSTGRES_PASSWORD: testpassword # pragma: allowlist secret
         POSTGRES_DB: testdb
         DATABASE_URL: postgresql+asyncpg://testuser:testpassword@localhost:5432/testdb # pragma: allowlist secret
         DATABASE_URL_ALEMBIC: postgresql+asyncpg://testuser:testpassword@localhost:5432/testdb # pragma: allowlist secret
+        
+        # Redis Test Config
+        REDIS_HOST: localhost
+        REDIS_PORT: 6379
+        REDIS_PASSWORD: "" # No password for CI Redis
+        REDIS_DB: 1 # Use a separate DB for tests
+
+        # App Config
         SECRET_KEY: "a-super-secret-key-for-ci" # pragma: allowlist secret
         ISSUER: "https://test.api.com"
         AUDIENCE: "https://test.frontend.com"
@@ -57,4 +76,3 @@ jobs:
         token: ${{ secrets.CODECOV_TOKEN }}
         file: ./coverage.xml
         verbose: true
-       
