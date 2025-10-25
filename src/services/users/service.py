@@ -6,11 +6,11 @@ from sqlalchemy.exc import IntegrityError
 
 from src.models.users import User as UserModel, UserRole
 
-from src.schemas.users import CreateUser, UpdateUser
+from src.schemas.users import CreateUser, UpdateUser, ReadAllUsers, ReadUser
 from src.services.authentication.service import get_password_hash, get_user
 from src.core.exceptions import LastAdminError, UselessOperationError, UsernameAlreadyExistsError, UserHasOrdersError
 
-async def get_user_by_id(db: AsyncSession, user_id: int) -> UserModel | None:
+async def get_user_by_id(db: AsyncSession, user_id: int) -> ReadUser | None:
     """
     Retrieve a user by their unique ID.
 
@@ -21,11 +21,12 @@ async def get_user_by_id(db: AsyncSession, user_id: int) -> UserModel | None:
     Returns:
         UserModel | None: The user object if found, otherwise None.
     """
-    user = await db.execute(select(UserModel).where(UserModel.id == user_id))
-    
-    return user.scalars().first()
+    result = await db.execute(select(UserModel).where(UserModel.id == user_id))
+    user = result.scalars().first()
 
-async def get_all_users(db: AsyncSession, limit, offset) -> list[UserModel]:
+    return ReadUser.model_validate(user)
+
+async def get_all_users(db: AsyncSession, limit, offset) -> list[ReadAllUsers]:
     """
     Retrieve all users with pagination.
 
@@ -35,13 +36,14 @@ async def get_all_users(db: AsyncSession, limit, offset) -> list[UserModel]:
         offset (int): Number of users to skip.
 
     Returns:
-        Sequence[UserModel]: List of user objects.
+        list[UserModel]: List of user objects.
     """
-    users = await db.execute(select(UserModel).limit(limit).offset(offset))
-     
-    return users.scalars().all()
+    result = await db.execute(select(UserModel).limit(limit).offset(offset))     
+    users_from_db= result.scalars().all()
 
-async def get_user_me(db: AsyncSession, current_user) -> UserModel:
+    return [ReadAllUsers.model_validate(user) for user in users_from_db]
+
+async def get_user_me(db: AsyncSession, current_user) -> ReadUser:
     """
     Retrieve the current authenticated user.
 
@@ -52,11 +54,12 @@ async def get_user_me(db: AsyncSession, current_user) -> UserModel:
     Returns:
         UserModel | None: The user object if found, otherwise None.
     """
-    user = await db.execute(select(UserModel).where(UserModel.id == current_user.id))
+    result = await db.execute(select(UserModel).where(UserModel.id == current_user.id))
+    user = result.scalars().first()
     
-    return user.scalars().first()
+    return ReadUser.model_validate(user)
 
-async def get_create_user(user: CreateUser, db: AsyncSession) -> UserModel:
+async def get_create_user(user: CreateUser, db: AsyncSession) -> ReadUser:
     """
     Create a new user in the database.
 
@@ -82,9 +85,10 @@ async def get_create_user(user: CreateUser, db: AsyncSession) -> UserModel:
         raise UsernameAlreadyExistsError(username=user.username)
     
     await db.refresh(model)
-    return model
+    
+    return ReadUser.model_validate(model)
 
-async def updated_new_role(username: str, role: UserRole, db: AsyncSession) -> UserModel:
+async def updated_new_role(username: str, role: UserRole, db: AsyncSession) -> ReadUser:
     """
     Update the role of a user, ensuring at least one admin remains.
 
@@ -119,9 +123,9 @@ async def updated_new_role(username: str, role: UserRole, db: AsyncSession) -> U
     user_to_change.role = role
     await db.flush()
     await db.refresh(user_to_change)
-    return user_to_change
+    return ReadUser.model_validate(user_to_change)
 
-async def get_updated_user(id: int, user: UpdateUser, db: AsyncSession) -> UserModel:
+async def get_updated_user(id: int, user: UpdateUser, db: AsyncSession) -> ReadUser | None:
     """
     Update an existing user's information.
 
@@ -150,9 +154,9 @@ async def get_updated_user(id: int, user: UpdateUser, db: AsyncSession) -> UserM
         await db.flush()
         await db.refresh(user_db)
 
-    return user_db
+    return ReadUser.model_validate(user_db) if user_db else None
 
-async def get_delete_user(id: int, db: AsyncSession) -> UserModel | None:
+async def get_delete_user(id: int, db: AsyncSession) -> ReadUser | None:
     """
     Delete a user by ID, ensuring at least one admin remains.
 
@@ -187,4 +191,4 @@ async def get_delete_user(id: int, db: AsyncSession) -> UserModel | None:
     await db.delete(user_to_delete)
     await db.flush()  
 
-    return user_to_delete
+    return None

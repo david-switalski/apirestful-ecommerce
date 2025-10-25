@@ -6,10 +6,10 @@ from sqlalchemy.orm import selectinload
 from src.models.orders import Order as OrderModel, OrderItem
 from src.models.products import Product as ProductModel
 from src.models.users import User as UserModel
-from src.schemas.orders import OrderCreate
+from src.schemas.orders import OrderCreate, ReadOrder
 from src.core.exceptions import ProductNotFound, InsufficientStock, EmptyOrder, ProductUnavailableError
 
-async def create_order(db: AsyncSession, order_data: OrderCreate, current_user: UserModel) -> OrderModel:
+async def create_order(db: AsyncSession, order_data: OrderCreate, current_user: UserModel) -> ReadOrder:
     if not order_data.items:
         raise EmptyOrder()
 
@@ -69,9 +69,9 @@ async def create_order(db: AsyncSession, order_data: OrderCreate, current_user: 
     await db.flush()
     await db.refresh(new_order, attribute_names=['items']) 
     
-    return new_order
+    return ReadOrder.model_validate(new_order)
 
-async def get_order_by_id_for_user(db: AsyncSession, order_id: int, user_id: int) -> OrderModel | None:
+async def get_order_by_id_for_user(db: AsyncSession, order_id: int, user_id: int) -> ReadOrder | None:
     stmt = (
         select(OrderModel)
         .options(selectinload(OrderModel.items)) 
@@ -79,9 +79,14 @@ async def get_order_by_id_for_user(db: AsyncSession, order_id: int, user_id: int
         .where(OrderModel.user_id == user_id)
     )
     result = await db.execute(stmt)
-    return result.scalars().first()
+    order = result.scalars().first()
+    
+    if order:
+        return ReadOrder.model_validate(order)
 
-async def get_all_orders_for_user(db: AsyncSession, user_id: int, limit: int, offset: int) -> list[OrderModel]:
+    return None
+
+async def get_all_orders_for_user(db: AsyncSession, user_id: int, limit: int, offset: int) -> list[ReadOrder]:
     stmt = (
         select(OrderModel)
         .options(selectinload(OrderModel.items)) 
@@ -91,4 +96,6 @@ async def get_all_orders_for_user(db: AsyncSession, user_id: int, limit: int, of
         .offset(offset)
     )
     result = await db.execute(stmt)
-    return result.scalars().all()
+    orders_list = result.scalars().all()
+    
+    return [ReadOrder.model_validate(order) for order in orders_list]
