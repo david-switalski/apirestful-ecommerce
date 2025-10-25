@@ -1,3 +1,5 @@
+from src.cache.dependencies import Redis_session
+
 from src.data_base.dependencies import Db_session
 from src.schemas.products import ReadProduct, CreateProduct, UpdateProduct, ReadAllProducts
 
@@ -9,21 +11,22 @@ from src.routers.users import Admin_user
 router = APIRouter(prefix = "/products")
  
 @router.get("/{product_id}", tags=["Products"], response_model=ReadProduct)
-async def read_product(db: Db_session, product_id : int):
+async def read_product(db: Db_session, redis: Redis_session, product_id : int):
     """
-    Retrieve a single product by its ID.
+    Retrieve a single product by its ID, utilizing a cache-aside strategy.
 
     Args:
         db (Db_session): Database session dependency.
+        redis (Redis_session): Redis client dependency for caching.
         product_id (int): ID of the product to retrieve.
 
     Returns:
         ReadProduct: The product data if found.
 
     Raises:
-        HTTPException: If the product is not found, returns 404.
+        HTTPException: If the product is not found (404).
     """
-    product = await get_product_by_id(db, product_id )
+    product = await get_product_by_id(db, redis, product_id )
     
     if product is not None:
         return  product
@@ -37,11 +40,11 @@ async def read_all_products(db: Db_session, limit: int=20, offset: int=0):
 
     Args:
         db (Db_session): Database session dependency.
-        limit (int, optional): Maximum number of products to return. Defaults to 20.
-        offset (int, optional): Number of products to skip. Defaults to 0.
+        limit (int): Maximum number of products to return. Defaults to 20.
+        offset (int): Number of products to skip. Defaults to 0.
 
     Returns:
-        list[ReadAllProducts]: List of products.
+        list[ReadAllProducts]: A list of products.
     """
     products = await get_all_products(db, limit=limit, offset=offset)
     
@@ -72,14 +75,22 @@ async def create_product(product: CreateProduct, db: Db_session, admin_user: Adm
     
     
 @router.patch("/{product_id}", tags=["Products"], response_model=ReadProduct)
-async def update_product(product_id : int, product : UpdateProduct, db: Db_session, admin_user: Admin_user):
+async def update_product(
+    product_id : int, 
+    product : UpdateProduct, 
+    db: Db_session, 
+    redis: Redis_session, 
+    admin_user: Admin_user
+):
     """
-    Update an existing product by its ID. Only accessible by admin users.
+    Update an existing product by its ID and invalidate its cache. Only accessible by admin users.
+
 
     Args:
         product_id (int): ID of the product to update.
         product (UpdateProduct): Updated product data.
         db (Db_session): Database session dependency.
+        redis (Redis_session): Redis client dependency for cache invalidation.
         admin_user (Admin_user): Admin user dependency.
 
     Returns:
@@ -88,7 +99,7 @@ async def update_product(product_id : int, product : UpdateProduct, db: Db_sessi
     Raises:
         HTTPException: If the product is not found, returns 404.
     """
-    updated_product = await get_updated_product(product_id, product, db)
+    updated_product = await get_updated_product(product_id,redis, product, db )
     
     if updated_product is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
@@ -96,13 +107,14 @@ async def update_product(product_id : int, product : UpdateProduct, db: Db_sessi
     return updated_product
 
 @router.delete("/{product_id}", tags=["Products"], status_code=status.HTTP_204_NO_CONTENT)
-async def delete_product(product_id : int, db: Db_session, admin_user: Admin_user):
+async def delete_product(product_id : int, db: Db_session, redis: Redis_session, admin_user: Admin_user):
     """
-    Delete a product by its ID. Only accessible by admin users.
+    Delete a product by its ID and remove it from the cache. Only accessible by admin users.
 
     Args:
         product_id (int): ID of the product to delete.
         db (Db_session): Database session dependency.
+        redis (Redis_session): Redis client dependency for cache invalidation.
         admin_user (Admin_user): Admin user dependency.
 
     Returns:
@@ -111,7 +123,8 @@ async def delete_product(product_id : int, db: Db_session, admin_user: Admin_use
     Raises:
         HTTPException: If the product is not found, returns 404.
     """
-    deleted_product = await get_deleted_product(product_id, db)
+    deleted_product = await get_deleted_product(product_id, db, redis)
+    
     if deleted_product is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
     
