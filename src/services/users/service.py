@@ -191,4 +191,4 @@ async def get_delete_user(id: int, db: AsyncSession) -> ReadUser | None:
     await db.delete(user_to_delete)
     await db.flush()  
 
-    return None
+    return user_to_delete
