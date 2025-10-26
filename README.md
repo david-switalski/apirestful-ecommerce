@@ -73,6 +73,7 @@ apirestful-ecommerce/
 │       └── ci.yml
 ├── alembic/                   # Alembic scripts and configuration for migrations
 ├── assets/                    # Static assets (e.g., images, fonts, gifs)
+├── performance_tests/         # Performance testing scripts    
 ├── redis/                     # Redis configuration
 │   └── redis.conf
 ├── scripts/                   # Utility scripts (e.g., create superuser)
