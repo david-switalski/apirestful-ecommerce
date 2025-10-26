@@ -19,7 +19,7 @@ class TestUserCreationAndAuth:
         """
         response = await client.post("/users/", json=test_user_credentials)
 
-        assert response.status_code == 200
+        assert response.status_code == 201
         data = response.json()
         assert data["username"] == test_user_credentials["username"]
         assert "id" in data
@@ -90,7 +90,7 @@ class TestAdminActions:
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
-        assert len(data) >= 2  # Should include at least admin and test user
+        assert len(data) >= 2 
         usernames = [user["username"] for user in data]
         assert "adminuser" in usernames
         assert "testuser" in usernames
@@ -129,8 +129,8 @@ class TestAdminActions:
             json={"role": "user"}
         )
         
-        assert response.status_code == 400
-        assert "The last administrator cannot be demoted" in response.json()["detail"]
+        assert response.status_code == 409
+        assert "Cannot demote user 'adminuser': this is the last administrator." in response.json()["detail"]
 
     async def test_admin_can_delete_user(self, authenticated_admin_client: AsyncClient, created_test_user: dict, db_session: AsyncSession):
         """
@@ -156,5 +156,5 @@ class TestAdminActions:
         
         response = await authenticated_admin_client.delete(f"/users/{admin_user.id}")
         
-        assert response.status_code == 400
-        assert "The last administrator cannot be deleted" in response.json()["detail"]
+        assert response.status_code == 409
+        assert "Cannot delete user 'adminuser': this is the last administrator." in response.json()["detail"]
