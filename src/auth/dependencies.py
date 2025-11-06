@@ -8,15 +8,15 @@ from jwt.exceptions import InvalidTokenError
 from src.models.users import User as UserModel
 from src.schemas.users import TokenData
 from src.core.config import settings
-from src.data_base.dependencies import Db_session
-from src.services.authentication.service import get_user
+from src.repositories.user_repository import UserRepository 
+from src.routers.users import get_user_repository
 
 # OAuth2 scheme for extracting the token from the Authorization header
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/token")
 
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)],
-    db : Db_session
+    user_repo: UserRepository = Depends(get_user_repository)
 ):
     """
     Retrieve the current user based on the JWT access token.
@@ -69,7 +69,7 @@ async def get_current_user(
         raise credentials_exception
     
     # Retrieve the user from the database
-    user = await get_user(username=token_data.username, db=db)
+    user = await user_repo.get_by_username(username=token_data.username)
     if user is None:
         raise credentials_exception
     return user

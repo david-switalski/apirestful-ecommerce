@@ -11,14 +11,13 @@ from fastapi import HTTPException, status
 from src.schemas.users import Token, RefreshTokenRequest
 from src.data_base.dependencies import Db_session
 from src.core.config import settings
-from sqlalchemy import select
-from src.models.users import User as UserModel
+from src.repositories.user_repository import UserRepository
 
 # Password hashing context using bcrypt
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-async def get_user(username: str, db: Db_session):
+async def get_user(username: str, user_repo: UserRepository):
     """
     Retrieve a user from the database by username.
 
@@ -29,8 +28,7 @@ async def get_user(username: str, db: Db_session):
     Returns:
         UserModel | None: The user object if found, otherwise None.
     """
-    result = await db.execute(select(UserModel).where(UserModel.username == username))
-    user = result.scalars().first()
+    user = await user_repo.get_by_username(username)
     return user
 
 async def get_password_hash(password):
