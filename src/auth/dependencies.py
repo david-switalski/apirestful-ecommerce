@@ -8,8 +8,10 @@ from jwt.exceptions import InvalidTokenError
 from src.models.users import User as UserModel
 from src.schemas.users import TokenData
 from src.core.config import settings
-from src.repositories.user_repository import UserRepository 
-from src.routers.users import get_user_repository
+from src.repositories.user_repository import UserRepository
+
+from src.users.dependencies import get_user_repository, get_authentication_service
+from src.services.authentication.service import AuthenticationService
 
 # OAuth2 scheme for extracting the token from the Authorization header
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/token")
@@ -39,43 +41,45 @@ async def get_current_user(
     try:
         # Decode the JWT token and validate claims
         payload = jwt.decode(
-            token, 
-            settings.SECRET_KEY, 
+            token,
+            settings.SECRET_KEY,
             audience=settings.AUDIENCE,
             issuer=settings.ISSUER,
-            algorithms=[settings.ALGORITHM])
-        
+            algorithms=[settings.ALGORITHM],
+        )
+
         # Ensure the token type is 'access'
         if payload.get("type") != "access":
             raise credentials_exception
-        
+
         username = payload.get("sub")
-        
+
         if username is None:
             raise credentials_exception
-        
+
         token_data = TokenData(username=username)
-        
+
     except jwt.ExpiredSignatureError:
         # Token has expired
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token has expired",
-            headers={"WWW-Authenticate": "Bearer"}
+            headers={"WWW-Authenticate": "Bearer"},
         )
-            
+
     except InvalidTokenError:
         # Token is invalid
         raise credentials_exception
-    
+
     # Retrieve the user from the database
     user = await user_repo.get_by_username(username=token_data.username)
     if user is None:
         raise credentials_exception
     return user
 
+
 async def get_current_active_user(
-    current_user: Annotated[UserModel, Depends(get_current_user)]
+    current_user: Annotated[UserModel, Depends(get_current_user)],
 ):
     """
     Ensure the current user is active.
@@ -90,10 +94,13 @@ async def get_current_active_user(
         HTTPException: If the user is inactive.
     """
     if not current_user.available:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Inactive user")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Inactive user"
+        )
     return current_user
 
-def require_role(required_role:str):
+
+def require_role(required_role: str):
     """
     Dependency factory to require a specific user role.
 
@@ -106,7 +113,10 @@ def require_role(required_role:str):
     Raises:
         HTTPException: If the user does not have the required role.
     """
-    async def role_checker(current_user: Annotated[UserModel, Depends(get_current_active_user)]):
+
+    async def role_checker(
+        current_user: Annotated[UserModel, Depends(get_current_active_user)],
+    ):
         """
         Check if the current user has the required role.
 
@@ -120,11 +130,16 @@ def require_role(required_role:str):
             HTTPException: If the user's role does not match the required role.
         """
         if current_user.role != required_role:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access Forbidden")
-        
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Access Forbidden"
+            )
+
         return current_user
-    
+
     return role_checker
+
+# Dependency that provides the authentication service
+Auth_user = Annotated[AuthenticationService, Depends(get_authentication_service)]
 
 # Dependency that provides the currently authenticated and active user
 Current_user = Annotated[UserModel, Depends(get_current_active_user)]

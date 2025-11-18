@@ -3,18 +3,12 @@ from fastapi.security import OAuth2PasswordRequestForm
 from typing import Annotated
 
 from src.schemas.users import ReadUser, CreateUser, UpdateUser, Token, ReadAllUsers, RefreshTokenRequest, UserRoleCurrent
-from src.models.users import User as UserModel
-from src.data_base.dependencies import Db_session
-from src.auth.dependencies import get_current_user, Current_user, Admin_user
-from src.services.authentication.service import get_login_for_access_token, get_refresh_access_token
+
+from src.auth.dependencies import Current_user, Admin_user, Auth_user
+
+from src.users.dependencies import get_user_service, get_authentication_service
 from src.services.users.service import UserService
-from src.repositories.user_repository import UserRepository
-
-def get_user_repository(db: Db_session) -> UserRepository:
-    return UserRepository(db)
-
-def get_user_service(repo: UserRepository = Depends(get_user_repository)) -> UserService:
-    return UserService(repo)
+from src.services.authentication.service import AuthenticationService
 
 router = APIRouter(prefix="/users")
 
@@ -79,22 +73,25 @@ async def delete_user(user_id: int, admin_user: Admin_user, service: UserService
 @router.post("/token", tags=["Token"], response_model=Token)
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    db: Db_session
+    auth_service: AuthenticationService = Depends(get_authentication_service)
 ):
-    token = await get_login_for_access_token(form_data, db)
+    token = await auth_service.get_login_for_access_token(form_data)
     return token
     
 @router.post("/token/refresh", tags=["Token"], response_model=Token)
-async def refresh_access_token(request: RefreshTokenRequest, db: Db_session):
+async def refresh_access_token(
+    request: RefreshTokenRequest, 
+    auth_service: AuthenticationService = Depends(get_authentication_service)
+):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    token = await get_refresh_access_token(request, db, credentials_exception)
+    token = await auth_service.refresh_access_token(request)
     return token
     
 @router.post("/logout", status_code=status.HTTP_200_OK)
-async def logout(db: Db_session, current_user: Annotated[UserModel, Depends(get_current_user)]):
-    current_user.hashed_refresh_token = None
+async def logout(current_user: Current_user, auth_service: Auth_user):
+    await auth_service.logout(current_user)
     return {'message': 'Logout success'}
