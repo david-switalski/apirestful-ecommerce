@@ -6,9 +6,8 @@ from src.schemas.users import ReadUser, CreateUser, UpdateUser, Token, ReadAllUs
 
 from src.auth.dependencies import Current_user, Admin_user, Auth_user
 
-from src.users.dependencies import get_user_service, get_authentication_service
+from src.users.dependencies import get_user_service
 from src.services.users.service import UserService
-from src.services.authentication.service import AuthenticationService
 
 router = APIRouter(prefix="/users")
 
@@ -73,7 +72,7 @@ async def delete_user(user_id: int, admin_user: Admin_user, service: UserService
 @router.post("/token", tags=["Token"], response_model=Token)
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    auth_service: AuthenticationService = Depends(get_authentication_service)
+    auth_service: Auth_user
 ):
     token = await auth_service.get_login_for_access_token(form_data)
     return token
@@ -81,7 +80,7 @@ async def login_for_access_token(
 @router.post("/token/refresh", tags=["Token"], response_model=Token)
 async def refresh_access_token(
     request: RefreshTokenRequest, 
-    auth_service: AuthenticationService = Depends(get_authentication_service)
+    auth_service: Auth_user
 ):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,

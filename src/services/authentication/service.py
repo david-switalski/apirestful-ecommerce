@@ -8,6 +8,7 @@ from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi import HTTPException, status
 
+from src.models.users import User as UserModel
 from src.schemas.users import Token, RefreshTokenRequest
 from src.data_base.dependencies import Db_session
 from src.core.config import settings
@@ -97,7 +98,7 @@ class AuthenticationService:
         if not user:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials")
         
-        if await verify_password(password, user.hashed_password):
+        if verify_password(password, user.hashed_password):
             return user
         else:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials")
@@ -138,7 +139,7 @@ class AuthenticationService:
         )
         
         # Store the hashed refresh token in the database
-        user.hashed_refresh_token = await get_password_hash(refresh_token)
+        user.hashed_refresh_token = get_password_hash(refresh_token)
         
         return Token(access_token=access_token, refresh_token=refresh_token, token_type="bearer")
         
@@ -182,12 +183,12 @@ class AuthenticationService:
 
             username_for_token = user.username
             
-            is_valid_refresh_token = await verify_password(request.refresh_token, user.hashed_refresh_token)
+            is_valid_refresh_token = verify_password(request.refresh_token, user.hashed_refresh_token)
             if not is_valid_refresh_token:
                 raise credentials_exception
 
             new_refresh_token = await self.create_refresh_token(data={"sub": username_for_token, "type": "refresh"})
-            user.hashed_refresh_token = await get_password_hash(new_refresh_token)
+            user.hashed_refresh_token = get_password_hash(new_refresh_token)
 
             new_access_token = await self.create_access_token(data={"sub": username_for_token, "type": "access"})
 
@@ -199,3 +200,18 @@ class AuthenticationService:
 
         except InvalidTokenError:
             raise credentials_exception
+        
+    async def logout(self, user_to_logout: UserModel):
+        """
+        Invalidates the user's refresh token to log them out.
+
+        Sets the user's stored hashed refresh token to None in the database.
+
+        Args:
+            user_to_logout (UserModel): The user model instance for the user.
+
+        Returns:
+            None: Updates user data in the database.
+        """
+        user_to_logout.hashed_refresh_token = None
+        await self.user_service.repo.update(user_to_logout)
