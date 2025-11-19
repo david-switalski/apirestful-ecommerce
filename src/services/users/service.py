@@ -3,9 +3,15 @@ from asyncpg.exceptions import UniqueViolationError
 
 from src.models.users import User as UserModel, UserRole
 from src.schemas.users import CreateUser, UpdateUser, ReadAllUsers, ReadUser
-from src.services.authentication.service import get_password_hash
 from src.repositories.user_repository import UserRepository
-from src.core.exceptions import LastAdminError, UselessOperationError, UsernameAlreadyExistsError, UserHasOrdersError
+from src.core.exceptions import (
+    LastAdminError,
+    UselessOperationError,
+    UsernameAlreadyExistsError,
+    UserHasOrdersError,
+)
+
+from src.core.security import get_password_hash
 
 class UserService:
     def __init__(self, repository: UserRepository):
@@ -17,24 +23,40 @@ class UserService:
             return ReadUser.model_validate(user_model)
         return None
 
+    async def get_user_by_username(self, username: str) -> UserModel | None:
+        """
+        Retrieve the full user model from the database by username.
+
+        NOTE: This method is intended for internal service-layer use (e.g., authentication)
+        as it returns the SQLAlchemy model, including sensitive fields.
+
+        Args:
+            username (str): The username to search for.
+
+        Returns:
+            UserModel | None: The SQLAlchemy user object if found, otherwise None.
+        """
+
+        user = await self.repo.get_by_username(username)
+        return user
+
     async def get_all_users(self, limit: int, offset: int) -> list[ReadAllUsers]:
         user_models = await self.repo.get_all(limit, offset)
         return [ReadAllUsers.model_validate(user) for user in user_models]
 
     async def get_user_me(self, current_user: UserModel) -> ReadUser:
-        user_model = await self.repo.get_by_id(current_user.id)
-        return ReadUser.model_validate(user_model)
+        return ReadUser.model_validate(current_user)
 
     async def create_user(self, user_data: CreateUser) -> ReadUser:
         if await self.repo.get_by_username(user_data.username):
             raise UsernameAlreadyExistsError(username=user_data.username)
 
-        user_dict = user_data.model_dump(exclude={'password'})
+        user_dict = user_data.model_dump(exclude={"password"})
         plain_password = user_data.password.get_secret_value()
-        hashed_pass = await get_password_hash(plain_password)
-        
+        hashed_pass = get_password_hash(plain_password)
+
         user_model = UserModel(**user_dict, hashed_password=hashed_pass)
-        
+
         try:
             created_model = await self.repo.add(user_model)
         except IntegrityError as exc:
@@ -42,7 +64,7 @@ class UserService:
                 raise UsernameAlreadyExistsError(username=user_data.username)
             else:
                 raise
-        
+
         return ReadUser.model_validate(created_model)
 
     async def update_user_role(self, username: str, role: UserRole) -> ReadUser | None:
@@ -69,7 +91,9 @@ class UserService:
 
         update_dict = user_data.model_dump(exclude_unset=True)
         if "password" in update_dict:
-            update_dict["hashed_password"] = await get_password_hash(user_data.password.get_secret_value())
+            update_dict["hashed_password"] = get_password_hash(
+                user_data.password.get_secret_value()
+            )
             del update_dict["password"]
 
         for key, value in update_dict.items():
@@ -85,7 +109,7 @@ class UserService:
 
         if user_to_delete.orders:
             raise UserHasOrdersError(username=user_to_delete.username)
-        
+
         if user_to_delete.role == UserRole.admin:
             total_admins = await self.repo.count_admins()
             if total_admins <= 1:
