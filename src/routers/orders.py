@@ -2,23 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.schemas.orders import OrderCreate, ReadOrder
 from src.auth.dependencies import Current_user
+from src.orders.dependencies import get_order_service
 from src.services.orders.service import OrderService
-from src.repositories.order_repository import OrderRepository
-from src.repositories.product_repository import ProductRepository
-from src.data_base.dependencies import Db_session
-
-def get_order_repository(db: Db_session) -> OrderRepository:
-    return OrderRepository(db)
-
-def get_product_repository(db: Db_session) -> ProductRepository:
-    return ProductRepository(db)
-
-def get_order_service(
-    order_repo: OrderRepository = Depends(get_order_repository),
-    product_repo: ProductRepository = Depends(get_product_repository)
-) -> OrderService:
-    return OrderService(order_repo, product_repo)
-
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
 
