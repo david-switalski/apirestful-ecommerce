@@ -2,8 +2,11 @@ import os
 from dotenv import load_dotenv
 
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from src.services.authentication.service import get_password_hash, get_user
+from src.services.users.service import UserService
 from src.models.users import User as UserModel, UserRole
+from src.repositories.user_repository import UserRepository 
+
+from src.core.security import get_password_hash
 
 # Load environment variables from .env file
 load_dotenv()
@@ -31,12 +34,17 @@ async def create_admin_user():
     print("Starting script to create an administrator user...")
     async with SessionLocal() as session:
         async with session.begin():
+            
+            user_repo = UserRepository(session)
+            
+            user_service = UserService(user_repo)
+            
             # Check if the admin user already exists
-            user = await get_user(ADMIN_USER, session)
+            user = await user_service.get_user_by_username(ADMIN_USER)
                 
             if user is None:
                 # Hash the admin password
-                hash_password = await get_password_hash(ADMIN_PASSWORD)
+                hash_password = get_password_hash(ADMIN_PASSWORD)
                     
                 # Create a new admin user instance
                 new_admin = UserModel(username = ADMIN_USER, hashed_password = hash_password, role=UserRole.admin)
