@@ -73,7 +73,7 @@ apirestful-ecommerce/
 │       └── ci.yml
 ├── alembic/                   # Alembic scripts and configuration for migrations
 ├── assets/                    # Static assets (e.g., images, fonts, gifs)
-├── performance_tests/         # Performance testing scripts    
+├── performance_tests/         # Performance testing scripts
 ├── redis/                     # Redis configuration
 │   └── redis.conf
 ├── scripts/                   # Utility scripts (e.g., create superuser)
@@ -98,7 +98,7 @@ apirestful-ecommerce/
 ├── entrypoint.sh              # Container entrypoint script
 ├── LICENSE
 ├── pytest.ini                 # Pytest configuration file
-├── README.md                  
+├── README.md
 ├── requirements.txt           # Production dependencies
 └── requirements-dev.txt       # Development dependencies
 ```
@@ -118,7 +118,7 @@ Before you begin, please ensure you have the following tools installed and confi
 *  **(Optional) Postman:** A tool for testing APIs. You can download it from [postman.com](https://www.postman.com/downloads/).
 
 ---
-   
+
 ## Installation and Setup
 
 Follow these steps to set up and run the project in your local environment.

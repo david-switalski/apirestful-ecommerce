@@ -1,39 +1,39 @@
 services:
-  web: 
-    build: . 
+  web:
+    build: .
     ports:
-      - "8000:8000" 
+      - "8000:8000"
     volumes:
       - .:/app
     env_file:
-      - .env 
+      - .env
     depends_on:
       db:
         condition: service_healthy
       cache:
         condition: service_healthy
 
-  db: 
-    image: postgres:16-alpine 
+  db:
+    image: postgres:16-alpine
     volumes:
-      - pg_data:/var/lib/postgresql/data 
+      - pg_data:/var/lib/postgresql/data
     env_file:
-      - .env 
+      - .env
     ports:
-      - "5432:5432" 
+      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
       start_period: 10s
-      
+
   cache:
     image: redis:7.2-alpine
     restart: always
     volumes:
       - redis_data:/data
-      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf 
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
     ports:
       - "6379:6379"
     env_file:

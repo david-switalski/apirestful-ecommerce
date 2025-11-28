@@ -5,7 +5,7 @@ anyio==4.9.0
 python-multipart==0.0.20
 websockets==15.0.1
 httptools==0.6.4
-SQLAlchemy==2.0.41
+SQLAlchemy[mypy]==2.0.41
 asyncpg==0.30.0
 greenlet==3.2.3
 pydantic==2.11.7

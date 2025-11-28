@@ -24,7 +24,7 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
-      
+
       redis:
         image: redis:7.2-alpine
         options: >-
@@ -57,7 +57,7 @@ jobs:
         POSTGRES_DB: testdb
         DATABASE_URL: postgresql+asyncpg://testuser:testpassword@localhost:5432/testdb # pragma: allowlist secret
         DATABASE_URL_ALEMBIC: postgresql+asyncpg://testuser:testpassword@localhost:5432/testdb # pragma: allowlist secret
-        
+
         # Redis Test Config
         REDIS_HOST: localhost
         REDIS_PORT: 6379
@@ -68,9 +68,9 @@ jobs:
         SECRET_KEY: "a-super-secret-key-for-ci" # pragma: allowlist secret
         ISSUER: "https://test.api.com"
         AUDIENCE: "https://test.frontend.com"
-      run: pytest --cov=src --cov-report=xml 
+      run: pytest --cov=src --cov-report=xml
 
-    - name: Upload coverage to Codecov 
+    - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
       with:
         token: ${{ secrets.CODECOV_TOKEN }}

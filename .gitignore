@@ -10,7 +10,7 @@ __pycache__/
 .DS_Store
 
 # Environment variables
-.env 
+.env
 
 # VScode configs
 .vscode

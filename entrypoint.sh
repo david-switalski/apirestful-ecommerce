@@ -1,6 +1,6 @@
 #!/bin/sh
 set -e
- 
+
 cd /app
 
 echo "INFO: Running database migrations..."
