@@ -1,5 +1,7 @@
 from typing import Annotated
+
 from fastapi import Depends
+
 from redis.asyncio import Redis
 from src.cache.session import get_redis_client
 
