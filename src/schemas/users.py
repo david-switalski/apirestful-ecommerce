@@ -1,5 +1,6 @@
 import re
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel
 from pydantic import ConfigDict
@@ -19,7 +20,7 @@ class UserValidations(BaseModel):
     password: SecretStr
 
     @field_validator("username")
-    def username_length(cls, v):
+    def username_length(cls: Any, v: str) -> str:
         """
         Validates that the username length is between 3 and 50 characters.
         """
@@ -28,7 +29,7 @@ class UserValidations(BaseModel):
         return v
 
     @field_validator("password")
-    def password_validation(cls, v):
+    def password_validation(cls: Any, v: SecretStr) -> SecretStr:
         """
         Validates that the password is between 8 and 50 characters and contains at least
         one uppercase letter, one lowercase letter, one digit, and one special character.
@@ -57,9 +58,9 @@ class UpdateUser(UserValidations):
     All fields are optional to allow partial updates.
     """
 
-    username: str | None = None
+    username: str
     available: bool | None = None
-    password: SecretStr | None = None
+    password: SecretStr
 
 
 class ReadUser(BaseModel):
@@ -113,7 +114,7 @@ class TokenData(BaseModel):
     Schema for token payload data.
     """
 
-    username: str | None = None
+    username: str
 
 
 class RefreshTokenRequest(BaseModel):

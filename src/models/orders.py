@@ -1,17 +1,25 @@
 import enum
 from datetime import datetime
+from decimal import Decimal
+from typing import List
+from typing import TYPE_CHECKING
 
 from sqlalchemy import BigInteger
-from sqlalchemy import Column
 from sqlalchemy import DateTime
 from sqlalchemy import Enum
 from sqlalchemy import ForeignKey
 from sqlalchemy import func
 from sqlalchemy import Integer
 from sqlalchemy import Numeric
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
 
 from src.data_base.base_class import Base
+
+if TYPE_CHECKING:
+    from src.models.products import Product
+    from src.models.users import User
 
 
 class OrderState(str, enum.Enum):
@@ -23,31 +31,30 @@ class OrderState(str, enum.Enum):
 
 
 class Order(Base):
-    order_id = Column(BigInteger, primary_key=True, index=True)
-    user_id = Column(BigInteger, ForeignKey("user.id"), nullable=False)
-    total_price = Column(Numeric, nullable=False)
-    state = Column(
+    order_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
+    total_price: Mapped[Decimal] = mapped_column(Numeric, nullable=False)
+    state: Mapped[OrderState] = mapped_column(
         Enum(OrderState, name="order_state_enum"),
         nullable=False,
         default=OrderState.pending,
     )
-
-    order_date = Column(
+    order_date: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), default=datetime.utcnow
     )
 
-    items = relationship(
-        "OrderItem", back_populates="order", cascade="all, delete, delete-orphan"
+    items: Mapped[List["OrderItem"]] = relationship(
+        back_populates="order", cascade="all, delete, delete-orphan"
     )
-    user = relationship("User", back_populates="orders")
+    user: Mapped["User"] = relationship(back_populates="orders")
 
 
 class OrderItem(Base):
-    order_item_id = Column(BigInteger, primary_key=True, index=True)
-    order_id = Column(BigInteger, ForeignKey("order.order_id"), nullable=False)
-    product_id = Column(BigInteger, ForeignKey("product.id"), nullable=False)
-    quantity = Column(Integer, nullable=False)
-    unit_price = Column(Numeric, nullable=False)
+    order_item_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
+    order_id: Mapped[int] = mapped_column(ForeignKey("order.order_id"), nullable=False)
+    product_id: Mapped[int] = mapped_column(ForeignKey("product.id"), nullable=False)
+    quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+    unit_price: Mapped[Decimal] = mapped_column(Numeric, nullable=False)
 
-    order = relationship("Order", back_populates="items")
-    product = relationship("Product", back_populates="order_items")
+    order: Mapped["Order"] = relationship(back_populates="items")
+    product: Mapped["Product"] = relationship(back_populates="order_items")
