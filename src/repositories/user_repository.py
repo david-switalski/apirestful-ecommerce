@@ -1,8 +1,11 @@
-from sqlalchemy import select, func
-from sqlalchemy.orm import selectinload
+from sqlalchemy import func
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
-from src.models.users import User as UserModel, UserRole
+from src.models.users import User as UserModel
+from src.models.users import UserRole
+
 
 class UserRepository:
     def __init__(self, db_session: AsyncSession):
@@ -42,6 +45,10 @@ class UserRepository:
         return result.scalar_one()
 
     async def get_by_id_with_orders(self, user_id: int) -> UserModel | None:
-        stmt = select(UserModel).options(selectinload(UserModel.orders)).where(UserModel.id == user_id)
+        stmt = (
+            select(UserModel)
+            .options(selectinload(UserModel.orders))
+            .where(UserModel.id == user_id)
+        )
         result = await self.db.execute(stmt)
         return result.scalars().first()

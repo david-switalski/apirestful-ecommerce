@@ -1,8 +1,9 @@
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from src.models.orders import Order as OrderModel
+
 
 class OrderRepository:
     def __init__(self, db_session: AsyncSession):
@@ -11,10 +12,12 @@ class OrderRepository:
     async def add(self, order: OrderModel) -> OrderModel:
         self.db.add(order)
         await self.db.flush()
-        await self.db.refresh(order, attribute_names=['items'])
+        await self.db.refresh(order, attribute_names=["items"])
         return order
 
-    async def get_by_id_and_user(self, order_id: int, user_id: int) -> OrderModel | None:
+    async def get_by_id_and_user(
+        self, order_id: int, user_id: int
+    ) -> OrderModel | None:
         stmt = (
             select(OrderModel)
             .options(selectinload(OrderModel.items))
@@ -23,7 +26,9 @@ class OrderRepository:
         result = await self.db.execute(stmt)
         return result.scalars().first()
 
-    async def get_all_for_user(self, user_id: int, limit: int, offset: int) -> list[OrderModel]:
+    async def get_all_for_user(
+        self, user_id: int, limit: int, offset: int
+    ) -> list[OrderModel]:
         stmt = (
             select(OrderModel)
             .options(selectinload(OrderModel.items))

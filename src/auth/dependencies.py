@@ -1,24 +1,27 @@
-from fastapi import HTTPException, Depends, status
-from fastapi.security import OAuth2PasswordBearer
 from typing import Annotated
 
 import jwt
+from fastapi import Depends
+from fastapi import HTTPException
+from fastapi import status
+from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 
-from src.models.users import User as UserModel
-from src.schemas.users import TokenData
 from src.core.config import settings
+from src.models.users import User as UserModel
 from src.repositories.user_repository import UserRepository
-
-from src.users.dependencies import get_user_repository, get_authentication_service
+from src.schemas.users import TokenData
 from src.services.authentication.service import AuthenticationService
+from src.users.dependencies import get_authentication_service
+from src.users.dependencies import get_user_repository
 
 # OAuth2 scheme for extracting the token from the Authorization header
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/token")
 
+
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)],
-    user_repo: UserRepository = Depends(get_user_repository)
+    user_repo: UserRepository = Depends(get_user_repository),
 ):
     """
     Retrieve the current user based on the JWT access token.
@@ -137,6 +140,7 @@ def require_role(required_role: str):
         return current_user
 
     return role_checker
+
 
 # Dependency that provides the authentication service
 Auth_user = Annotated[AuthenticationService, Depends(get_authentication_service)]

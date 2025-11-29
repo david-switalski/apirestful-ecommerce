@@ -1,3 +1,4 @@
-from .users import User
+from .orders import Order
+from .orders import OrderItem
 from .products import Product
-from .orders import Order, OrderItem
+from .users import User

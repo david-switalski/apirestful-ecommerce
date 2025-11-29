@@ -1,5 +1,8 @@
-from pydantic import BaseModel, ConfigDict
 from datetime import datetime
+
+from pydantic import BaseModel
+from pydantic import ConfigDict
+
 
 class Product(BaseModel):
     """
@@ -13,7 +16,8 @@ class Product(BaseModel):
         description (str): Description of the product.
         available (bool): Availability status of the product. Defaults to True.
     """
-    model_config = ConfigDict(extra='forbid')
+
+    model_config = ConfigDict(extra="forbid")
     name: str
     category: str
     price: float
@@ -21,12 +25,15 @@ class Product(BaseModel):
     description: str
     available: bool = True
 
+
 class CreateProduct(Product):
     """
     Schema for creating a new product.
     Inherits all fields from Product.
     """
+
     pass
+
 
 class UpdateProduct(BaseModel):
     """
@@ -41,12 +48,14 @@ class UpdateProduct(BaseModel):
         description (Optional[str]): Updated description.
         available (Optional[bool]): Updated availability status.
     """
+
     name: str | None = None
     category: str | None = None
     price: float | None = None
     stock: int | None = None
     description: str | None = None
     available: bool | None = None
+
 
 class ReadProduct(Product):
     """
@@ -57,10 +66,12 @@ class ReadProduct(Product):
         created_at (Optional[datetime]): Timestamp when the product was created.
         updated_at (Optional[datetime]): Timestamp when the product was last updated.
     """
+
     model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
     id: int
     created_at: datetime | None
     updated_at: datetime | None
+
 
 class ReadAllProducts(BaseModel):
     """
@@ -72,6 +83,7 @@ class ReadAllProducts(BaseModel):
         price (float): Price of the product.
         description (str): Description of the product.
     """
+
     model_config = ConfigDict(from_attributes=True)
 
     id: int
