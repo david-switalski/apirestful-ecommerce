@@ -17,7 +17,7 @@ router = APIRouter(prefix="/products")
 @router.get("/{product_id}", tags=["Products"], response_model=ReadProduct)
 async def read_product(
     product_id: int, service: ProductService = Depends(get_product_service)
-):
+) -> ReadProduct:
     product = await service.get_product_by_id(product_id)
     if product is None:
         raise HTTPException(
@@ -31,7 +31,7 @@ async def read_all_products(
     limit: int = 20,
     offset: int = 0,
     service: ProductService = Depends(get_product_service),
-):
+) -> list[ReadAllProducts]:
     """
     Retrieve a list of all products with pagination.
 
@@ -58,7 +58,7 @@ async def create_product(
     product: CreateProduct,
     admin_user: Admin_user,
     service: ProductService = Depends(get_product_service),
-):
+) -> ReadProduct:
     created_product = await service.create_product(product)
     return created_product
 
@@ -69,7 +69,7 @@ async def update_product(
     product: UpdateProduct,
     admin_user: Admin_user,
     service: ProductService = Depends(get_product_service),
-):
+) -> ReadProduct:
     """
     Update an existing product by its ID and invalidate its cache. Only accessible by admin users.
 
@@ -104,7 +104,7 @@ async def delete_product(
     product_id: int,
     admin_user: Admin_user,
     service: ProductService = Depends(get_product_service),
-):
+) -> None:
     """
     Delete a product by its ID and remove it from the cache. Only accessible by admin users.
 

@@ -32,13 +32,17 @@ app.include_router(users_router)
 
 # MIDDLEWARE & ROUTERS
 @app.exception_handler(ProductNotFound)
-async def product_not_found_exception_handler(request: Request, exc: ProductNotFound):
+async def product_not_found_exception_handler(
+    request: Request, exc: ProductNotFound
+) -> JSONResponse:
     return JSONResponse(status_code=HTTP_404_NOT_FOUND, content={"detail": str(exc)})
 
 
 @app.exception_handler(UselessOperationError)
 @app.exception_handler(EmptyOrder)
-async def bad_request_exception_handler(request: Request, exc: Exception):
+async def bad_request_exception_handler(
+    request: Request, exc: Exception
+) -> JSONResponse:
     return JSONResponse(status_code=HTTP_400_BAD_REQUEST, content={"detail": str(exc)})
 
 
@@ -49,7 +53,7 @@ async def bad_request_exception_handler(request: Request, exc: Exception):
 @app.exception_handler(InsufficientStock)
 @app.exception_handler(UserHasOrdersError)
 @app.exception_handler(ProductUnavailableError)
-async def conflict_exception_handler(request: Request, exc: Exception):
+async def conflict_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     return JSONResponse(status_code=HTTP_409_CONFLICT, content={"detail": str(exc)})
 
 
@@ -67,7 +71,7 @@ app.add_middleware(
 
 
 @app.get("/")
-async def read_root():
+async def read_root() -> dict[str, str]:
     """
     Root endpoint that returns a welcome message and documentation hint.
     """

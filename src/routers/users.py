@@ -28,7 +28,7 @@ async def read_all_users(
     limit: int = 20,
     offset: int = 0,
     service: UserService = Depends(get_user_service),
-):
+) -> list[ReadAllUsers]:
     users = await service.get_all_users(limit=limit, offset=offset)
     return users
 
@@ -36,7 +36,7 @@ async def read_all_users(
 @router.get("/me", tags=["Users"], response_model=ReadUser)
 async def read_users_me(
     current_user: Current_user, service: UserService = Depends(get_user_service)
-):
+) -> ReadUser:
     user = await service.get_user_me(current_user)
     return user
 
@@ -46,7 +46,7 @@ async def read_user(
     user_id: int,
     admin_user: Admin_user,
     service: UserService = Depends(get_user_service),
-):
+) -> ReadUser:
     user = await service.get_user_by_id(user_id)
     if user is None:
         raise HTTPException(
@@ -60,7 +60,7 @@ async def read_user(
 )
 async def create_user(
     user: CreateUser, service: UserService = Depends(get_user_service)
-):
+) -> ReadUser:
     new_user = await service.create_user(user)
     return new_user
 
@@ -71,7 +71,7 @@ async def new_role_user(
     role: UserRoleCurrent,
     admin_user: Admin_user,
     service: UserService = Depends(get_user_service),
-):
+) -> ReadUser:
     updated_user = await service.update_user_role(username, role.role)
     if updated_user is None:
         raise HTTPException(
@@ -87,7 +87,7 @@ async def update_user(
     user: UpdateUser,
     admin_user: Admin_user,
     service: UserService = Depends(get_user_service),
-):
+) -> ReadUser:
     updated_user = await service.update_user(user_id, user)
     if updated_user is None:
         raise HTTPException(
@@ -102,7 +102,7 @@ async def delete_user(
     user_id: int,
     admin_user: Admin_user,
     service: UserService = Depends(get_user_service),
-):
+) -> None:
     success = await service.delete_user(user_id)
     if not success:
         raise HTTPException(
@@ -115,23 +115,27 @@ async def delete_user(
 @router.post("/token", tags=["Token"], response_model=Token)
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()], auth_service: Auth_user
-):
+) -> Token:
     token = await auth_service.get_login_for_access_token(form_data)
     return token
 
 
 @router.post("/token/refresh", tags=["Token"], response_model=Token)
-async def refresh_access_token(request: RefreshTokenRequest, auth_service: Auth_user):
+async def refresh_access_token(
+    request: RefreshTokenRequest, auth_service: Auth_user
+) -> Token:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    token = await auth_service.refresh_access_token(request)
+    token = await auth_service.get_refresh_access_token(
+        request, credentials_exception=credentials_exception
+    )
     return token
 
 
 @router.post("/logout", status_code=status.HTTP_200_OK)
-async def logout(current_user: Current_user, auth_service: Auth_user):
+async def logout(current_user: Current_user, auth_service: Auth_user) -> dict[str, str]:
     await auth_service.logout(current_user)
     return {"message": "Logout success"}

@@ -17,7 +17,7 @@ async def create_new_order(
     order_data: OrderCreate,
     current_user: Current_user,
     service: OrderService = Depends(get_order_service),
-):
+) -> ReadOrder:
     new_order = await service.create_order(order_data, current_user)
     return new_order
 
@@ -27,7 +27,7 @@ async def read_order(
     order_id: int,
     current_user: Current_user,
     service: OrderService = Depends(get_order_service),
-):
+) -> ReadOrder:
     order = await service.get_order_by_id_for_user(order_id, current_user.id)
     if order is None:
         raise HTTPException(
@@ -43,6 +43,6 @@ async def read_all_my_orders(
     limit: int = 20,
     offset: int = 0,
     service: OrderService = Depends(get_order_service),
-):
+) -> list[ReadOrder]:
     orders = await service.get_all_orders_for_user(current_user.id, limit, offset)
     return orders
