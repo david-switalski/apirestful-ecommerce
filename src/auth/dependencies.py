@@ -1,4 +1,6 @@
 from typing import Annotated
+from typing import Any
+from typing import Coroutine
 
 import jwt
 from fastapi import Depends
@@ -22,7 +24,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/token")
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)],
     user_repo: UserRepository = Depends(get_user_repository),
-):
+) -> UserModel:
     """
     Retrieve the current user based on the JWT access token.
 
@@ -75,7 +77,7 @@ async def get_current_user(
         raise credentials_exception
 
     # Retrieve the user from the database
-    user = await user_repo.get_by_username(username=token_data.username)
+    user = await user_repo.get_by_username(token_data.username)
     if user is None:
         raise credentials_exception
     return user
@@ -83,7 +85,7 @@ async def get_current_user(
 
 async def get_current_active_user(
     current_user: Annotated[UserModel, Depends(get_current_user)],
-):
+) -> UserModel:
     """
     Ensure the current user is active.
 
@@ -103,7 +105,7 @@ async def get_current_active_user(
     return current_user
 
 
-def require_role(required_role: str):
+def require_role(required_role: str) -> Coroutine[Any, Any, UserModel]:
     """
     Dependency factory to require a specific user role.
 
@@ -119,7 +121,7 @@ def require_role(required_role: str):
 
     async def role_checker(
         current_user: Annotated[UserModel, Depends(get_current_active_user)],
-    ):
+    ) -> UserModel:
         """
         Check if the current user has the required role.
 
@@ -139,7 +141,7 @@ def require_role(required_role: str):
 
         return current_user
 
-    return role_checker
+    return role_checker  # type: ignore[return-value]
 
 
 # Dependency that provides the authentication service

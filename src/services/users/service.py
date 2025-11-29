@@ -57,7 +57,7 @@ class UserService:
         plain_password = user_data.password.get_secret_value()
         hashed_pass = get_password_hash(plain_password)
 
-        user_model = UserModel(**user_dict, hashed_password=hashed_pass)
+        user_model = UserModel(**user_dict, hashed_password=hashed_pass)  # type: ignore[call-arg]
 
         try:
             created_model = await self.repo.add(user_model)
@@ -93,9 +93,10 @@ class UserService:
 
         update_dict = user_data.model_dump(exclude_unset=True)
         if "password" in update_dict:
-            update_dict["hashed_password"] = get_password_hash(
-                user_data.password.get_secret_value()
-            )
+            if user_data.password is not None:
+                update_dict["hashed_password"] = get_password_hash(
+                    user_data.password.get_secret_value()
+                )
             del update_dict["password"]
 
         for key, value in update_dict.items():

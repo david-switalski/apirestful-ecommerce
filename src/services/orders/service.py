@@ -34,6 +34,12 @@ class OrderService:
             if not product:
                 raise ProductNotFound(item.product_id)
 
+            if product.stock is None:
+                raise ValueError(f"Product {product.id} has invalid stock data")
+
+            if product.name is None:
+                raise ValueError(f"Product {product.id} has no name")
+
             if product.stock < item.quantity:
                 raise InsufficientStock(
                     product_id=product.id,
@@ -50,20 +56,24 @@ class OrderService:
         for item in order_data.items:
             product = product_map[item.product_id]
 
+            price_decimal = Decimal(str(product.price))
+
             order_items.append(
                 OrderItem(
                     product_id=product.id,
                     quantity=item.quantity,
-                    unit_price=product.price,
-                )
+                    unit_price=price_decimal,
+                )  # type: ignore
             )
 
-            total_price += product.price * item.quantity
-            product.stock -= item.quantity
+            total_price += price_decimal * item.quantity
+
+            if product is not None and product.stock is not None:
+                product.stock -= item.quantity
 
         new_order_model = OrderModel(
             user_id=current_user.id, total_price=total_price, items=order_items
-        )
+        )  # type: ignore
 
         created_order = await self.order_repo.add(new_order_model)
 

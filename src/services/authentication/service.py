@@ -13,7 +13,6 @@ from passlib.context import CryptContext
 from src.core.config import settings
 from src.core.security import get_password_hash
 from src.core.security import verify_password
-from src.data_base.dependencies import Db_session
 from src.models.users import User as UserModel
 from src.schemas.users import RefreshTokenRequest
 from src.schemas.users import Token
@@ -30,7 +29,7 @@ class AuthenticationService:
 
     async def create_refresh_token(
         self, data: dict, expires_delta: timedelta | None = None
-    ):
+    ) -> str:
         """
         Create a JWT refresh token.
 
@@ -63,7 +62,7 @@ class AuthenticationService:
 
     async def create_access_token(
         self, data: dict, expires_delta: timedelta | None = None
-    ):
+    ) -> str:
         """
         Create a JWT access token.
 
@@ -94,7 +93,7 @@ class AuthenticationService:
         )
         return encoded_jwt
 
-    async def authenticate_user(self, username: str, password: str):
+    async def authenticate_user(self, username: str, password: str) -> UserModel:
         """
         Authenticate a user by username and password.
 
@@ -123,7 +122,9 @@ class AuthenticationService:
                 detail="Could not validate credentials",
             )
 
-    async def get_login_for_access_token(self, form_data: OAuth2PasswordRequestForm):
+    async def get_login_for_access_token(
+        self, form_data: OAuth2PasswordRequestForm
+    ) -> Token:
         """
         Authenticate user and generate access and refresh tokens.
 
@@ -167,9 +168,8 @@ class AuthenticationService:
     async def get_refresh_access_token(
         self,
         request: RefreshTokenRequest,
-        db: Db_session,
         credentials_exception: HTTPException,
-    ):
+    ) -> Token:
         """
         Generate new access and refresh tokens using a valid refresh token.
 
@@ -229,7 +229,7 @@ class AuthenticationService:
         except InvalidTokenError:
             raise credentials_exception
 
-    async def logout(self, user_to_logout: UserModel):
+    async def logout(self, user_to_logout: UserModel) -> None:
         """
         Invalidates the user's refresh token to log them out.
 
