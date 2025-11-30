@@ -1,5 +1,6 @@
 import enum
 from datetime import datetime
+from datetime import timezone
 from decimal import Decimal
 from typing import List
 from typing import TYPE_CHECKING
@@ -40,7 +41,9 @@ class Order(Base):
         default=OrderState.pending,
     )
     order_date: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), default=datetime.utcnow
+        DateTime(timezone=True),
+        server_default=func.now(),
+        default=lambda: datetime.now(timezone.utc),
     )
 
     items: Mapped[List["OrderItem"]] = relationship(

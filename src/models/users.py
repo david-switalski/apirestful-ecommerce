@@ -1,5 +1,6 @@
 import enum
 from datetime import datetime
+from datetime import timezone
 from typing import List
 from typing import Optional
 
@@ -43,13 +44,13 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
-        default=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
         index=True,
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         onupdate=func.now(),
-        default=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
         index=True,
     )
 

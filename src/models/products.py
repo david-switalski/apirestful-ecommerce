@@ -1,4 +1,5 @@
 from datetime import datetime
+from datetime import timezone
 from decimal import Decimal
 from typing import List
 from typing import Optional
@@ -31,10 +32,14 @@ class Product(Base):
     available: Mapped[bool] = mapped_column(Boolean, default=True)
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), default=datetime.utcnow
+        DateTime(timezone=True),
+        server_default=func.now(),
+        default=lambda: datetime.now(timezone.utc),
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), onupdate=func.now(), default=datetime.utcnow
+        DateTime(timezone=True),
+        onupdate=func.now(),
+        default=lambda: datetime.now(timezone.utc),
     )
 
     order_items: Mapped[List["OrderItem"]] = relationship(
