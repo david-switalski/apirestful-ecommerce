@@ -94,7 +94,7 @@ async def db_session(db_engine) -> AsyncGenerator[AsyncSession, None]:
         SessionTest = async_sessionmaker(bind=connection, expire_on_commit=False)
         session = SessionTest()
         yield session
-        await session.close()
+        await session.aclose()
         await trans.rollback()
 
 
@@ -114,7 +114,7 @@ async def test_redis_client() -> AsyncGenerator[redis.Redis, None]:
     assert await client.ping(), "Redis server is not available"
     yield client
     await client.flushdb()
-    await client.close()
+    await client.aclose()
 
 
 @pytest.fixture(scope="function")
