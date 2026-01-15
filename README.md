@@ -41,6 +41,7 @@ This project is a robust and scalable RESTful API designed for an E-Commerce pla
 * **Database:** PostgreSQL
 * **Object-Relational Mapper (ORM):** SQLAlchemy (with `asyncio` support)
 * **Migrations:** Alembic
+* **Caching:** Redis
 
 ### Configuration & Security
 * **Authentication:** PyJWT, passlib, bcrypt
@@ -85,7 +86,11 @@ apirestful-ecommerce/
 │   ├── models/                # SQLAlchemy models (DB tables)
 │   ├── routers/               # API endpoints (controllers)
 │   ├── schemas/               # Pydantic schemas (data validation)
-│   ├── services/              # Business logic
+│   ├── services/              # Business logic layer (Domain separated)
+│   │   ├── authentication/
+│   │   ├── orders/
+│   │   ├── products/
+│   │   ├── users/
 │   └── main.py                # FastAPI application entry point
 ├── tests/                     # Automated tests
 ├── .dockerignore              # Files to be ignored by Docker
@@ -295,7 +300,7 @@ The test suite runs against an isolated, temporary database that is created and 
 1.  **Start the database service only:**
     If you don't have the full application running, you can start just the database container in the background:
     ```bash
-    docker-compose up -d db
+    docker-compose up -d db cache
     ```
     This ensures that `pytest` has a PostgreSQL server to connect to at `localhost:5432`.
 
@@ -305,6 +310,27 @@ The test suite runs against an isolated, temporary database that is created and 
     pytest
     ```
     `pytest` will connect to the running database, create a temporary `test_...` database, run all tests, and delete it upon completion.
+
+---
+
+## Performance Testing (Redis Caching)
+
+This project includes scripts to demonstrate the performance impact of Redis caching.
+
+1.  **Ensure the app is running:**
+    ```bash
+    docker-compose up -d
+    ```
+2.  **Run the tests:**
+    *   **Test with Cache:**
+        ```bash
+        python performance_tests/test-cache.py
+        ```
+    *   **Test without Cache (Direct DB access):**
+        ```bash
+        python performance_tests/test_no_cache.py
+        ```
+    *Compare the "Average response time" output of both scripts to see the efficiency gains.*
 
 ---
 
