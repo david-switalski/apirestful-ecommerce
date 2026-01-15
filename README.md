@@ -73,6 +73,10 @@ apirestful-ecommerce/
 │   └── workflows/
 │       └── ci.yml
 ├── alembic/                   # Alembic scripts and configuration for migrations
+│   ├── versions/              # Individual migration scripts
+│   ├── env.py
+│   ├── README
+│   └── script.py.mako
 ├── assets/                    # Static assets (e.g., images, fonts, gifs)
 ├── performance_tests/         # Performance testing scripts
 ├── redis/                     # Redis configuration
@@ -84,6 +88,9 @@ apirestful-ecommerce/
 │   ├── core/                  # Core configuration and custom exceptions
 │   ├── data_base/             # DB session setup and base classes
 │   ├── models/                # SQLAlchemy models (DB tables)
+│   ├── orders/                # Dependency injection providers for orders
+│   ├── products/              # Dependency injection providers for products
+│   ├── repositories/          # Data access layer (Repository pattern)
 │   ├── routers/               # API endpoints (controllers)
 │   ├── schemas/               # Pydantic schemas (data validation)
 │   ├── services/              # Business logic layer (Domain separated)
@@ -91,21 +98,25 @@ apirestful-ecommerce/
 │   │   ├── orders/
 │   │   ├── products/
 │   │   ├── users/
+│   ├── users/                 # Dependency injection providers for users
 │   └── main.py                # FastAPI application entry point
 ├── tests/                     # Automated tests
 ├── .dockerignore              # Files to be ignored by Docker
 ├── .env.example               # Template for environment variables
+├── .gitattributes           # Git path attributes (e.g., line endings)
 ├── .gitignore                 # Files to be ignored by Git
 ├── .pre-commit-config.yaml    # Configuration for pre-commit hooks
+├── .secrets.baseline        # Security baseline for secret detection
 ├── alembic.ini                # Alembic configuration file
-├── docker-compose.yml         # Container orchestration
+├── docker-compose.yaml         # Container orchestration
 ├── Dockerfile                 # Application image definition
 ├── entrypoint.sh              # Container entrypoint script
 ├── LICENSE
 ├── pytest.ini                 # Pytest configuration file
 ├── README.md
 ├── requirements.txt           # Production dependencies
-└── requirements-dev.txt       # Development dependencies
+├── requirements-dev.txt       # Development dependencies
+└── setup.cfg                  # Configuration for linters (Flake8, Mypy)
 ```
 
 
