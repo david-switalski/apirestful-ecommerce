@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     ISSUER: str  # JWT issuer
     AUDIENCE: str  # JWT audience
 
+    REDIS_USER: str  # User for Redis server. De
     REDIS_PASSWORD: str  # Password for Redis server
     REDIS_HOST: str  # Host address for Redis server
     REDIS_PORT: int  # Port number for Redis server

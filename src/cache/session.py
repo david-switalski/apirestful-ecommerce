@@ -8,6 +8,7 @@ from src.core.config import settings
 # This is more efficient than creating a new connection for every request.
 # Configuration is loaded from the application's settings.
 redis_pool = ConnectionPool(
+    username=settings.REDIS_USER,
     host=settings.REDIS_HOST,
     port=settings.REDIS_PORT,
     password=settings.REDIS_PASSWORD,
