@@ -106,7 +106,7 @@ async def test_redis_client() -> AsyncGenerator[redis.Redis, None]:
     Flushes the test Redis DB after each test for isolation.
     """
     client = redis.Redis(
-        user=TEST_REDIS_USER,
+        username=TEST_REDIS_USER,
         host=TEST_REDIS_HOST,
         port=TEST_REDIS_PORT,
         password=TEST_REDIS_PASSWORD,
