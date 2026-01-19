@@ -40,6 +40,7 @@ MAINTENANCE_URL = (
 )
 
 # REDIS TEST SETUP
+TEST_REDIS_USER = os.getenv("REDIS_USER", "default")
 TEST_REDIS_HOST = "localhost"
 TEST_REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 TEST_REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", "")
@@ -105,6 +106,7 @@ async def test_redis_client() -> AsyncGenerator[redis.Redis, None]:
     Flushes the test Redis DB after each test for isolation.
     """
     client = redis.Redis(
+        user=TEST_REDIS_USER,
         host=TEST_REDIS_HOST,
         port=TEST_REDIS_PORT,
         password=TEST_REDIS_PASSWORD,

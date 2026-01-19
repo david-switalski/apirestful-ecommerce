@@ -59,6 +59,7 @@ jobs:
         DATABASE_URL_ALEMBIC: postgresql+asyncpg://testuser:testpassword@localhost:5432/testdb # pragma: allowlist secret
 
         # Redis Test Config
+        REDIS_USER: default
         REDIS_HOST: localhost
         REDIS_PORT: 6379
         REDIS_PASSWORD: "" # No password for CI Redis
