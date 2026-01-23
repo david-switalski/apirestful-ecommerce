@@ -1,38 +1,33 @@
 FROM python:3.12-slim-bookworm AS builder
 
-ENV PYTHONDONTWRITEBYTECODE=1
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
-ENV PYTHONUNBUFFERED=1
+ENV UV_COMPILE_BYTECODE=1
+ENV UV_LINK_MODE=copy
 
 WORKDIR /app
 
-RUN python -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
+COPY pyproject.toml uv.lock ./
 
+ENV UV_PROJECT_ENVIRONMENT="/opt/.venv"
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN uv sync --frozen --no-dev --no-install-project
 
-
-FROM python:3.12-slim-bookworm AS production
+FROM python:3.12-slim-bookworm as production
 
 WORKDIR /app
 
 RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
 
-COPY --from=builder /opt/venv /opt/venv
+COPY --from=builder --chown=appuser:appgroup /opt/.venv /opt/.venv
 
-ENV PATH="/opt/venv/bin:$PATH"
-COPY . .
+COPY --chown=appuser:appgroup . .
 
-RUN chown -R appuser:appgroup /app
+ENV PATH="/opt/.venv/bin:$PATH"
 
 USER appuser
 
 EXPOSE 8000
-
-HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:8000/ || exit 1
 
 ENTRYPOINT ["/app/entrypoint.sh"]
 
