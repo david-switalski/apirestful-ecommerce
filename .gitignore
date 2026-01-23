@@ -1,5 +1,5 @@
 # Virtual environment
-venv/
+.venv/
 
 # Python cache files
 __pycache__/
@@ -14,3 +14,10 @@ __pycache__/
 
 # VScode configs
 .vscode
+
+# UV Cache
+.uv_cache/
+
+# Git files
+.git/
+.gitignore
