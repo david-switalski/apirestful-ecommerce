@@ -18,6 +18,7 @@ from src.core.exceptions import (
     UsernameAlreadyExistsError,
 )
 from src.core.logging_conf import configure_logging
+from src.core.middleware import IdempotencyMiddleware
 from src.routers.orders import router as orders_router
 from src.routers.products import router as products_router
 from src.routers.users import router as users_router
@@ -27,6 +28,8 @@ logger = structlog.get_logger()
 
 # Create FastAPI application instance with project metadata
 app = FastAPI(title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION)
+
+app.add_middleware(IdempotencyMiddleware)
 
 # Include routers for products, users and orders endpoints
 app.include_router(products_router)
