@@ -6,6 +6,10 @@ __pycache__/
 *.pyc
 .pytest_cache
 
+# Cache linters and type checkers
+.mypy_cache/
+.ruff_cache/
+
 # MacOS specific files
 .DS_Store
 
@@ -13,7 +17,7 @@ __pycache__/
 .env
 
 # VScode configs
-.vscode
+.vscode/
 
 # UV Cache
 .uv_cache/
@@ -21,3 +25,6 @@ __pycache__/
 # Git files
 .git/
 .gitignore
+
+# Coverage reports
+.coverage
