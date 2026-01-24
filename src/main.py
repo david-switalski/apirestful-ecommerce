@@ -1,3 +1,4 @@
+import structlog
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -16,9 +17,13 @@ from src.core.exceptions import (
     UserHasOrdersError,
     UsernameAlreadyExistsError,
 )
+from src.core.logging_conf import configure_logging
 from src.routers.orders import router as orders_router
 from src.routers.products import router as products_router
 from src.routers.users import router as users_router
+
+configure_logging()
+logger = structlog.get_logger()
 
 # Create FastAPI application instance with project metadata
 app = FastAPI(title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION)
@@ -75,3 +80,8 @@ async def read_root() -> dict[str, str]:
     Root endpoint that returns a welcome message and documentation hint.
     """
     return {"message": "¡Welcome to my API! Visit /docs for the documentation."}
+
+
+@app.on_event("startup")
+async def startup_event() -> None:
+    logger.info("startup", status="ready", env=settings.PROJECT_NAME)
