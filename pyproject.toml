@@ -1,9 +1,13 @@
 [project]
 name = "ecommerce-products-apirest"
 version = "0.1.0"
-description = "Add your description here"
+description = "High performance API "
 readme = "README.md"
 requires-python = ">=3.12"
+license = { file = "LICENSE" }
+authors = [
+  { name = "David Switalski", email = "davidspuni@gmail.com" },
+]
 dependencies = [
     "alembic>=1.18.1",
     "asyncpg>=0.31.0",
@@ -25,7 +29,47 @@ dependencies = [
 dev = [
     "detect-secrets>=1.5.0",
     "httpx>=0.28.1",
+    "mypy>=1.19.1",
     "pre-commit>=4.5.1",
     "pytest>=9.0.2",
     "pytest-asyncio>=1.3.0",
+    "pytest-cov>=7.0.0",
+    "ruff>=0.14.14",
+    "sqlalchemy[mypy]>=2.0.46",
 ]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+norecursedirs = ["performance_tests", "redis", "scripts"]
+addopts = "-v --cov=src --cov-report=term-missing"
+
+[tool.mypy]
+python_version = "3.12"
+plugins = ["pydantic.mypy", "sqlalchemy.ext.mypy.plugin"]
+ignore_missing_imports = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+exclude = ["alembic/", "tests/", "performance_tests/", "scripts/"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+# E/W: Style (PEP8), F: Logic Errors, I: Import Sorting, B: Bugbear (Bugs),
+# UP: Modern Python, N: Naming, S: Security (Bandit)
+select = ["E", "W", "F", "I", "B", "UP", "N", "S"]
+ignore = ["E501", "B008", "N805"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
+
+[tool.ruff.lint.per-file-ignores]
+# Ignore claims and secrets encoded in tests and scripts
+"tests/*" = ["S101", "S105"]
+"scripts/*" = ["S101", "S105"]
+"conftest.py" = ["S101", "S105"]
+
+[tool.coverage.run]
+source = ["src"]
