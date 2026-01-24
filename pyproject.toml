@@ -50,11 +50,19 @@ ignore_missing_imports = true
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
 check_untyped_defs = true
-exclude = ["alembic/", "tests/", "performance_tests/", "scripts/"]
+exclude = [
+    "tests/",
+    "alembic/",
+    "performance_tests/",
+    "scripts/"
+]
 
 [tool.ruff]
 line-length = 88
 target-version = "py312"
+exclude = [
+    "alembic/versions/*",
+]
 
 [tool.ruff.lint]
 # E/W: Style (PEP8), F: Logic Errors, I: Import Sorting, B: Bugbear (Bugs),

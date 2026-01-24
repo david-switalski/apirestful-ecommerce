@@ -1,11 +1,8 @@
-from typing import Annotated
-from typing import Any
-from typing import Coroutine
+from collections.abc import Coroutine
+from typing import Annotated, Any
 
 import jwt
-from fastapi import Depends
-from fastapi import HTTPException
-from fastapi import status
+from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 
@@ -14,8 +11,7 @@ from src.models.users import User as UserModel
 from src.repositories.user_repository import UserRepository
 from src.schemas.users import TokenData
 from src.services.authentication.service import AuthenticationService
-from src.users.dependencies import get_authentication_service
-from src.users.dependencies import get_user_repository
+from src.users.dependencies import get_authentication_service, get_user_repository
 
 # OAuth2 scheme for extracting the token from the Authorization header
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/token")
@@ -70,11 +66,11 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token has expired",
             headers={"WWW-Authenticate": "Bearer"},
-        )
+        ) from None
 
     except InvalidTokenError:
         # Token is invalid
-        raise credentials_exception
+        raise credentials_exception from None
 
     # Retrieve the user from the database
     user = await user_repo.get_by_username(token_data.username)

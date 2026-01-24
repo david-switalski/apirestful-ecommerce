@@ -2,10 +2,7 @@ import re
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel
-from pydantic import ConfigDict
-from pydantic import field_validator
-from pydantic import SecretStr
+from pydantic import BaseModel, ConfigDict, SecretStr, field_validator
 
 from src.models.users import UserRole
 

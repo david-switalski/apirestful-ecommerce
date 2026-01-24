@@ -1,22 +1,21 @@
-from fastapi import FastAPI
-from fastapi import Request
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from starlette.status import HTTP_400_BAD_REQUEST
-from starlette.status import HTTP_404_NOT_FOUND
-from starlette.status import HTTP_409_CONFLICT
+from starlette.status import HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
 
 from src.core.config import settings
-from src.core.exceptions import EmptyOrder
-from src.core.exceptions import InsufficientStock
-from src.core.exceptions import LastAdminError
-from src.core.exceptions import ProductInUseError
-from src.core.exceptions import ProductNameAlreadyExistsError
-from src.core.exceptions import ProductNotFound
-from src.core.exceptions import ProductUnavailableError
-from src.core.exceptions import UselessOperationError
-from src.core.exceptions import UserHasOrdersError
-from src.core.exceptions import UsernameAlreadyExistsError
+from src.core.exceptions import (
+    EmptyOrderError,
+    InsufficientStockError,
+    LastAdminError,
+    ProductInUseError,
+    ProductNameAlreadyExistsError,
+    ProductNotFoundError,
+    ProductUnavailableError,
+    UselessOperationError,
+    UserHasOrdersError,
+    UsernameAlreadyExistsError,
+)
 from src.routers.orders import router as orders_router
 from src.routers.products import router as products_router
 from src.routers.users import router as users_router
@@ -31,15 +30,15 @@ app.include_router(users_router)
 
 
 # MIDDLEWARE & ROUTERS
-@app.exception_handler(ProductNotFound)
+@app.exception_handler(ProductNotFoundError)
 async def product_not_found_exception_handler(
-    request: Request, exc: ProductNotFound
+    request: Request, exc: ProductNotFoundError
 ) -> JSONResponse:
     return JSONResponse(status_code=HTTP_404_NOT_FOUND, content={"detail": str(exc)})
 
 
 @app.exception_handler(UselessOperationError)
-@app.exception_handler(EmptyOrder)
+@app.exception_handler(EmptyOrderError)
 async def bad_request_exception_handler(
     request: Request, exc: Exception
 ) -> JSONResponse:
@@ -50,7 +49,7 @@ async def bad_request_exception_handler(
 @app.exception_handler(ProductNameAlreadyExistsError)
 @app.exception_handler(ProductInUseError)
 @app.exception_handler(LastAdminError)
-@app.exception_handler(InsufficientStock)
+@app.exception_handler(InsufficientStockError)
 @app.exception_handler(UserHasOrdersError)
 @app.exception_handler(ProductUnavailableError)
 async def conflict_exception_handler(request: Request, exc: Exception) -> JSONResponse:

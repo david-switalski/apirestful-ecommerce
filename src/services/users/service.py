@@ -1,18 +1,17 @@
 from asyncpg.exceptions import UniqueViolationError
 from sqlalchemy.exc import IntegrityError
 
-from src.core.exceptions import LastAdminError
-from src.core.exceptions import UselessOperationError
-from src.core.exceptions import UserHasOrdersError
-from src.core.exceptions import UsernameAlreadyExistsError
+from src.core.exceptions import (
+    LastAdminError,
+    UselessOperationError,
+    UserHasOrdersError,
+    UsernameAlreadyExistsError,
+)
 from src.core.security import get_password_hash
 from src.models.users import User as UserModel
 from src.models.users import UserRole
 from src.repositories.user_repository import UserRepository
-from src.schemas.users import CreateUser
-from src.schemas.users import ReadAllUsers
-from src.schemas.users import ReadUser
-from src.schemas.users import UpdateUser
+from src.schemas.users import CreateUser, ReadAllUsers, ReadUser, UpdateUser
 
 
 class UserService:
@@ -63,7 +62,7 @@ class UserService:
             created_model = await self.repo.add(user_model)
         except IntegrityError as exc:
             if isinstance(exc.orig, UniqueViolationError):
-                raise UsernameAlreadyExistsError(username=user_data.username)
+                raise UsernameAlreadyExistsError(username=user_data.username) from None
             else:
                 raise
 

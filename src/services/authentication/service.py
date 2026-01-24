@@ -1,23 +1,17 @@
 import uuid
-from datetime import datetime
-from datetime import timedelta
-from datetime import timezone
+from datetime import UTC, datetime, timedelta
 
 import jwt
-from fastapi import HTTPException
-from fastapi import status
+from fastapi import HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from jwt import InvalidTokenError
 from passlib.context import CryptContext
 
 from src.core.config import settings
-from src.core.security import get_password_hash
-from src.core.security import verify_password
+from src.core.security import get_password_hash, verify_password
 from src.models.users import User as UserModel
-from src.schemas.users import RefreshTokenRequest
-from src.schemas.users import Token
+from src.schemas.users import RefreshTokenRequest, Token
 from src.services.users.service import UserService
-
 
 # Password hashing context using bcrypt
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -42,14 +36,14 @@ class AuthenticationService:
         """
         to_encode = data.copy()
         if expires_delta:
-            expire = datetime.now(timezone.utc) + expires_delta
+            expire = datetime.now(UTC) + expires_delta
         else:
-            expire = datetime.now(timezone.utc) + timedelta(days=7)
+            expire = datetime.now(UTC) + timedelta(days=7)
 
         to_encode.update(
             {
                 "exp": expire,
-                "iat": datetime.now(timezone.utc),
+                "iat": datetime.now(UTC),
                 "iss": settings.ISSUER,
                 "aud": settings.AUDIENCE,
                 "jti": str(uuid.uuid4()),
@@ -75,14 +69,14 @@ class AuthenticationService:
         """
         to_encode = data.copy()
         if expires_delta:
-            expire = datetime.now(timezone.utc) + expires_delta
+            expire = datetime.now(UTC) + expires_delta
         else:
-            expire = datetime.now(timezone.utc) + timedelta(minutes=15)
+            expire = datetime.now(UTC) + timedelta(minutes=15)
 
         to_encode.update(
             {
                 "exp": expire,
-                "iat": datetime.now(timezone.utc),
+                "iat": datetime.now(UTC),
                 "iss": settings.ISSUER,
                 "aud": settings.AUDIENCE,
                 "jti": str(uuid.uuid4()),
@@ -162,7 +156,9 @@ class AuthenticationService:
         user.hashed_refresh_token = get_password_hash(refresh_token)
 
         return Token(
-            access_token=access_token, refresh_token=refresh_token, token_type="bearer"
+            access_token=access_token,
+            refresh_token=refresh_token,
+            token_type="bearer",  # noqa: S106
         )
 
     async def get_refresh_access_token(
@@ -223,11 +219,11 @@ class AuthenticationService:
             return Token(
                 access_token=new_access_token,
                 refresh_token=new_refresh_token,
-                token_type="bearer",
+                token_type="bearer",  # noqa: S106
             )
 
         except InvalidTokenError:
-            raise credentials_exception
+            raise credentials_exception from None
 
     async def logout(self, user_to_logout: UserModel) -> None:
         """

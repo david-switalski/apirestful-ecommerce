@@ -1,21 +1,18 @@
 from typing import Annotated
 
-from fastapi import APIRouter
-from fastapi import Depends
-from fastapi import HTTPException
-from fastapi import status
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 
-from src.auth.dependencies import Admin_user
-from src.auth.dependencies import Auth_user
-from src.auth.dependencies import Current_user
-from src.schemas.users import CreateUser
-from src.schemas.users import ReadAllUsers
-from src.schemas.users import ReadUser
-from src.schemas.users import RefreshTokenRequest
-from src.schemas.users import Token
-from src.schemas.users import UpdateUser
-from src.schemas.users import UserRoleCurrent
+from src.auth.dependencies import Admin_user, Auth_user, Current_user
+from src.schemas.users import (
+    CreateUser,
+    ReadAllUsers,
+    ReadUser,
+    RefreshTokenRequest,
+    Token,
+    UpdateUser,
+    UserRoleCurrent,
+)
 from src.services.users.service import UserService
 from src.users.dependencies import get_user_service
 

@@ -1,20 +1,10 @@
 import enum
-from datetime import datetime
-from datetime import timezone
+from datetime import UTC, datetime
 from decimal import Decimal
-from typing import List
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger
-from sqlalchemy import DateTime
-from sqlalchemy import Enum
-from sqlalchemy import ForeignKey
-from sqlalchemy import func
-from sqlalchemy import Integer
-from sqlalchemy import Numeric
-from sqlalchemy.orm import Mapped
-from sqlalchemy.orm import mapped_column
-from sqlalchemy.orm import relationship
+from sqlalchemy import BigInteger, DateTime, Enum, ForeignKey, Integer, Numeric, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.data_base.base_class import Base
 
@@ -43,10 +33,10 @@ class Order(Base):
     order_date: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
 
-    items: Mapped[List["OrderItem"]] = relationship(
+    items: Mapped[list["OrderItem"]] = relationship(
         back_populates="order", cascade="all, delete, delete-orphan"
     )
     user: Mapped["User"] = relationship(back_populates="orders")

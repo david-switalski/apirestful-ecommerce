@@ -1,8 +1,7 @@
 import os
 
 from dotenv import load_dotenv
-from sqlalchemy.ext.asyncio import async_sessionmaker
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from src.core.security import get_password_hash
 from src.models.users import User as UserModel
@@ -37,7 +36,6 @@ async def create_admin_user():
     print("Starting script to create an administrator user...")
     async with SessionLocal() as session:
         async with session.begin():
-
             user_repo = UserRepository(session)
 
             user_service = UserService(user_repo)

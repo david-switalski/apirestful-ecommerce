@@ -1,15 +1,16 @@
 from asyncpg.exceptions import UniqueViolationError
+from redis.asyncio import Redis
 from sqlalchemy.exc import IntegrityError
 
-from redis.asyncio import Redis
-from src.core.exceptions import ProductInUseError
-from src.core.exceptions import ProductNameAlreadyExistsError
+from src.core.exceptions import ProductInUseError, ProductNameAlreadyExistsError
 from src.models.products import Product as ProductModel
 from src.repositories.product_repository import ProductRepository
-from src.schemas.products import CreateProduct
-from src.schemas.products import ReadAllProducts
-from src.schemas.products import ReadProduct
-from src.schemas.products import UpdateProduct
+from src.schemas.products import (
+    CreateProduct,
+    ReadAllProducts,
+    ReadProduct,
+    UpdateProduct,
+)
 
 
 class ProductService:
@@ -50,7 +51,7 @@ class ProductService:
             created_model = await self.repo.add(product_model)
         except IntegrityError as exc:
             if isinstance(exc.orig, UniqueViolationError):
-                raise ProductNameAlreadyExistsError(name=product_data.name)
+                raise ProductNameAlreadyExistsError(name=product_data.name) from None
             else:
                 raise
 

@@ -24,7 +24,7 @@ def measure_with_cache():
                 (end_time - start_time) * 1000
             )  # Convert to milliseconds
             print(
-                f"Request {i+1}/{NUM_REQUESTS}: {response_times[-1]:.2f} ms (WITH CACHE)"
+                f"Request {i + 1}/{NUM_REQUESTS}: {response_times[-1]:.2f} ms (WITH CACHE)"
             )
 
     return statistics.mean(response_times)

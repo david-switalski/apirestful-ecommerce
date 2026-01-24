@@ -1,7 +1,7 @@
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
-from redis.asyncio import ConnectionPool
-from redis.asyncio import Redis
+from redis.asyncio import ConnectionPool, Redis
+
 from src.core.config import settings
 
 # Create a reusable connection pool for the Redis server.

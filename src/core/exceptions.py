@@ -84,7 +84,7 @@ class ProductUnavailableError(Exception):
 
 
 # --- EXCEPTIONS FOR ORDERS ---
-class ProductNotFound(Exception):
+class ProductNotFoundError(Exception):
     """Raised when a product ID in an order does not exist in the database."""
 
     def __init__(self, product_id: int):
@@ -92,7 +92,7 @@ class ProductNotFound(Exception):
         super().__init__(f"Product with ID {product_id} not found.")
 
 
-class InsufficientStock(Exception):
+class InsufficientStockError(Exception):
     """Raised when a product in an order does not have enough available stock for the requested quantity."""
 
     def __init__(
@@ -108,7 +108,7 @@ class InsufficientStock(Exception):
         )
 
 
-class EmptyOrder(Exception):
+class EmptyOrderError(Exception):
     """Raised when an attempt is made to create an order with no items."""
 
     def __init__(self, message: str = "Cannot create an order with no items.") -> None:

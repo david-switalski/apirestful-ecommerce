@@ -1,12 +1,8 @@
-from fastapi import APIRouter
-from fastapi import Depends
-from fastapi import HTTPException
-from fastapi import status
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.auth.dependencies import Current_user
 from src.orders.dependencies import get_order_service
-from src.schemas.orders import OrderCreate
-from src.schemas.orders import ReadOrder
+from src.schemas.orders import OrderCreate, ReadOrder
 from src.services.orders.service import OrderService
 
 router = APIRouter(prefix="/orders", tags=["Orders"])

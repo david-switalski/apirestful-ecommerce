@@ -1,16 +1,17 @@
 from decimal import Decimal
 
-from src.core.exceptions import EmptyOrder
-from src.core.exceptions import InsufficientStock
-from src.core.exceptions import ProductNotFound
-from src.core.exceptions import ProductUnavailableError
+from src.core.exceptions import (
+    EmptyOrderError,
+    InsufficientStockError,
+    ProductNotFoundError,
+    ProductUnavailableError,
+)
 from src.models.orders import Order as OrderModel
 from src.models.orders import OrderItem
 from src.models.users import User as UserModel
 from src.repositories.order_repository import OrderRepository
 from src.repositories.product_repository import ProductRepository
-from src.schemas.orders import OrderCreate
-from src.schemas.orders import ReadOrder
+from src.schemas.orders import OrderCreate, ReadOrder
 
 
 class OrderService:
@@ -22,7 +23,7 @@ class OrderService:
         self, order_data: OrderCreate, current_user: UserModel
     ) -> ReadOrder:
         if not order_data.items:
-            raise EmptyOrder()
+            raise EmptyOrderError()
 
         product_ids = [item.product_id for item in order_data.items]
 
@@ -32,7 +33,7 @@ class OrderService:
         for item in order_data.items:
             product = product_map.get(item.product_id)
             if not product:
-                raise ProductNotFound(item.product_id)
+                raise ProductNotFoundError(item.product_id)
 
             if product.stock is None:
                 raise ValueError(f"Product {product.id} has invalid stock data")
@@ -41,7 +42,7 @@ class OrderService:
                 raise ValueError(f"Product {product.id} has no name")
 
             if product.stock < item.quantity:
-                raise InsufficientStock(
+                raise InsufficientStockError(
                     product_id=product.id,
                     product_name=product.name,
                     requested=item.quantity,

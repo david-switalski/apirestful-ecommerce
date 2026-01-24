@@ -33,7 +33,6 @@ def measure_without_cache():
     response_times = []
     print("\nStart measurements without cache")
     for i in range(NUM_REQUESTS):
-
         r.flushdb()
 
         start_time = time.perf_counter()
@@ -43,7 +42,7 @@ def measure_without_cache():
         end_time = time.perf_counter()
 
         response_times.append((end_time - start_time) * 1000)
-        print(f"Request {i+1}/{NUM_REQUESTS}: {response_times[-1]:.2f} ms (NO CACHE)")
+        print(f"Request {i + 1}/{NUM_REQUESTS}: {response_times[-1]:.2f} ms (NO CACHE)")
 
     return statistics.mean(response_times)
 

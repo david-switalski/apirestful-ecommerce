@@ -3,20 +3,19 @@ import os
 from logging.config import fileConfig
 
 from dotenv import load_dotenv
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+from sqlalchemy import engine_from_config, pool
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from alembic import context
 from src.data_base.base_class import Base
-from src.models.orders import Order  # flake8: noqa: F401
-from src.models.orders import OrderItem  # flake8: noqa: F401
-from src.models.products import Product  # flake8: noqa: F401
-from src.models.users import User  # flake8: noqa: F401
-
+from src.models.orders import (
+    Order,  # noqa: F401
+    OrderItem,  # noqa: F401
+)
+from src.models.products import Product  # noqa: F401
+from src.models.users import User  # noqa: F401
 
 load_dotenv()
-
 
 config = context.config
 
@@ -39,7 +38,6 @@ target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
-
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
@@ -53,7 +51,6 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection):
-
     context.configure(
         connection=connection,
         target_metadata=target_metadata,
@@ -64,7 +61,6 @@ def do_run_migrations(connection):
 
 
 async def run_async_migrations():
-
     connectable = AsyncEngine(
         engine_from_config(
             config.get_section(config.config_ini_section, {}),
@@ -75,7 +71,6 @@ async def run_async_migrations():
     )
 
     async with connectable.connect() as connection:
-
         await connection.run_sync(do_run_migrations)
 
 

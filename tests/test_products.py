@@ -2,9 +2,9 @@ import json
 
 import pytest
 from httpx import AsyncClient
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from redis.asyncio import Redis
 from src.models.products import Product as ProductModel
 from src.schemas.products import ReadProduct
 

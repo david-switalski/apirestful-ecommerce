@@ -1,20 +1,17 @@
 import asyncio
 import os
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 import pytest
+import redis.asyncio as redis
+from alembic.config import Config
 from dotenv import load_dotenv
-from httpx import ASGITransport
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import async_sessionmaker
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
-import redis.asyncio as redis
 from alembic import command
-from alembic.config import Config
 from src.cache.session import get_redis_client
 from src.data_base.dependencies import get_db
 from src.main import app
@@ -59,7 +56,7 @@ async def setup_test_database():
         autocommit_conn = await conn.execution_options(isolation_level="AUTOCOMMIT")
         await autocommit_conn.execute(
             text(
-                f"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'test_{db_name}'"
+                f"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'test_{db_name}'"  # noqa: S608
             )
         )
         await autocommit_conn.execute(text(f'DROP DATABASE IF EXISTS "test_{db_name}"'))
@@ -92,7 +89,7 @@ async def db_engine():
 async def db_session(db_engine) -> AsyncGenerator[AsyncSession, None]:
     async with db_engine.connect() as connection:
         trans = await connection.begin()
-        SessionTest = async_sessionmaker(bind=connection, expire_on_commit=False)
+        SessionTest = async_sessionmaker(bind=connection, expire_on_commit=False)  # noqa: N806
         session = SessionTest()
         yield session
         await session.aclose()

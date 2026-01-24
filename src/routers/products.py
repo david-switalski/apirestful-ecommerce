@@ -1,14 +1,13 @@
-from fastapi import APIRouter
-from fastapi import Depends
-from fastapi import HTTPException
-from fastapi import status
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.auth.dependencies import Admin_user
 from src.products.dependencies import get_product_service
-from src.schemas.products import CreateProduct
-from src.schemas.products import ReadAllProducts
-from src.schemas.products import ReadProduct
-from src.schemas.products import UpdateProduct
+from src.schemas.products import (
+    CreateProduct,
+    ReadAllProducts,
+    ReadProduct,
+    UpdateProduct,
+)
 from src.services.products.service import ProductService
 
 router = APIRouter(prefix="/products")
