@@ -2,29 +2,34 @@
 .git
 .gitignore
 
-# Python virtual environment
-venv/
+# GitHub configuration
+.github/
+
+# Virtual environment
+.venv/
 
 # Python cache files
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
+.pytest_cache
+
+# Cache linters and type checkers
+.mypy_cache/
+.ruff_cache/
+
+# Environment variables
+.env
+
+# UV Cache
+.uv_cache/
 
 # Development tools configuration files
-.pytest_cache/
-pytest.ini
 .pre-commit-config.yaml
 .secrets.baseline
 
-# Development dependencies
-requirements-dev.txt
-
 # Test code
 tests/
-
-# Environment files and local secrets
-.env
+performance_tests/.
 
 # Documentation and notes that the app doesn't need
 README.md
@@ -32,5 +37,16 @@ README.md
 # Licenses
 LICENSE
 
-# Configuration files for your code editor
+# Configuration files for editors
 .vscode/
+
+# Static
+assets/
+
+# Docker files
+Dockerfile
+docker-compose.yaml
+.dockerignore
+
+# Coverage reports
+.coverage
