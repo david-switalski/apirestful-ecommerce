@@ -1,4 +1,4 @@
-from collections.abc import Coroutine
+from collections.abc import Callable, Coroutine
 from typing import Annotated, Any
 
 import jwt
@@ -101,7 +101,7 @@ async def get_current_active_user(
     return current_user
 
 
-def require_role(required_role: str) -> Coroutine[Any, Any, UserModel]:
+def require_role(required_role: str) -> Callable[..., Coroutine[Any, Any, UserModel]]:
     """
     Dependency factory to require a specific user role.
 
