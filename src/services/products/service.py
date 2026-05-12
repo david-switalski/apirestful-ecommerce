@@ -1,3 +1,4 @@
+import structlog
 from asyncpg.exceptions import UniqueViolationError
 from redis.asyncio import Redis
 from sqlalchemy.exc import IntegrityError
@@ -11,6 +12,8 @@ from src.schemas.products import (
     ReadProduct,
     UpdateProduct,
 )
+
+logger = structlog.get_logger()
 
 
 class ProductService:
@@ -49,6 +52,15 @@ class ProductService:
 
         try:
             created_model = await self.repo.add(product_model)
+
+            inventory_key = f"inventory:{created_model.id}"
+            await self.redis.set(inventory_key, created_model.stock)
+            logger.info(
+                "inventory_synced",
+                product_id=created_model.id,
+                stock=created_model.stock,
+            )
+
         except IntegrityError as exc:
             if isinstance(exc.orig, UniqueViolationError):
                 raise ProductNameAlreadyExistsError(name=product_data.name) from None
@@ -71,6 +83,14 @@ class ProductService:
         updated_model = await self.repo.update(product_model)
 
         await self.redis.delete(f"product:{product_id}")
+
+        if "stock" in update_data:
+            await self.redis.set(f"inventory:{product_id}", updated_model.stock)
+            logger.info(
+                "inventory_updated",
+                product_id=product_id,
+                new_stock=updated_model.stock,
+            )
 
         return ReadProduct.model_validate(updated_model)
 

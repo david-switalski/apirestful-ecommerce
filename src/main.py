@@ -1,3 +1,6 @@
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
+
 import structlog
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -26,8 +29,17 @@ from src.routers.users import router as users_router
 configure_logging()
 logger = structlog.get_logger()
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    logger.info("startup", status="ready", env=settings.PROJECT_NAME)
+    yield
+
+
 # Create FastAPI application instance with project metadata
-app = FastAPI(title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION)
+app = FastAPI(
+    title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION, lifespan=lifespan
+)
 
 app.add_middleware(IdempotencyMiddleware)
 
@@ -75,6 +87,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(IdempotencyMiddleware)
 
 
 @app.get("/")
@@ -83,8 +96,3 @@ async def read_root() -> dict[str, str]:
     Root endpoint that returns a welcome message and documentation hint.
     """
     return {"message": "¡Welcome to my API! Visit /docs for the documentation."}
-
-
-@app.on_event("startup")
-async def startup_event() -> None:
-    logger.info("startup", status="ready", env=settings.PROJECT_NAME)

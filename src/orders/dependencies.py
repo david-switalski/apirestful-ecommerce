@@ -1,5 +1,6 @@
 from fastapi import Depends
 
+from src.cache.dependencies import Redis_session
 from src.data_base.dependencies import Db_session
 from src.repositories.order_repository import OrderRepository
 from src.repositories.product_repository import ProductRepository
@@ -15,7 +16,8 @@ def get_product_repository(db: Db_session) -> ProductRepository:
 
 
 def get_order_service(
+    redis_client: Redis_session,
     order_repo: OrderRepository = Depends(get_order_repository),
     product_repo: ProductRepository = Depends(get_product_repository),
 ) -> OrderService:
-    return OrderService(order_repo, product_repo)
+    return OrderService(order_repo, product_repo, redis_client)

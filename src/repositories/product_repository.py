@@ -50,13 +50,7 @@ class ProductRepository:
         result = await self.db.execute(stmt)
         return result.scalars().first()
 
-    async def get_many_by_ids_with_lock(
-        self, product_ids: list[int]
-    ) -> list[ProductModel]:
-        stmt = (
-            select(ProductModel)
-            .where(ProductModel.id.in_(product_ids))
-            .with_for_update()
-        )
+    async def get_many_by_ids(self, product_ids: list[int]) -> list[ProductModel]:
+        stmt = select(ProductModel).where(ProductModel.id.in_(product_ids))
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
