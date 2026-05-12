@@ -1,3 +1,7 @@
+import json
+import secrets
+import time
+from datetime import UTC, datetime
 from decimal import Decimal
 
 import structlog
@@ -10,14 +14,18 @@ from src.core.exceptions import (
     ProductNotFoundError,
     ProductUnavailableError,
 )
-from src.models.orders import Order as OrderModel
-from src.models.orders import OrderItem
+from src.models.orders import OrderState
 from src.models.users import User as UserModel
 from src.repositories.order_repository import OrderRepository
 from src.repositories.product_repository import ProductRepository
-from src.schemas.orders import OrderCreate, ReadOrder
+from src.schemas.orders import OrderCreate, ReadOrder, ReadOrderItem
 
 logger = structlog.get_logger()
+
+
+def generate_order_id() -> int:
+    timestamp_ms = int(time.time() * 1000)
+    return (timestamp_ms << 22) | (1 << 12) | secrets.randbelow(4096)
 
 
 class OrderService:
@@ -48,7 +56,6 @@ class OrderService:
         keys = []
         args = []
         total_price = Decimal("0.0")
-        order_items = []
 
         for item in order_data.items:
             product = product_map.get(item.product_id)
@@ -62,14 +69,6 @@ class OrderService:
 
             price_decimal = Decimal(str(product.price))
             total_price += price_decimal * item.quantity
-
-            order_items.append(
-                OrderItem(
-                    product_id=product.id,
-                    quantity=item.quantity,
-                    unit_price=price_decimal,
-                )  # type: ignore[call-arg]
-            )
 
         result = await self.deduct_script(keys=keys, args=args)
 
@@ -102,31 +101,50 @@ class OrderService:
                 available=current_stock,
             )
 
-        new_order_model = OrderModel(
-            user_id=current_user.id, total_price=total_price, items=order_items
-        )  # type: ignore[call-arg]
+        order_id = generate_order_id()
+
+        items_payload = [
+            {
+                "product_id": item.product_id,
+                "quantity": item.quantity,
+                "unit_price": str(product_map[item.product_id].price),
+            }
+            for item in order_data.items
+        ]
+
+        event_data = {
+            "order_id": str(order_id),
+            "user_id": str(current_user.id),
+            "total_price": str(total_price),
+            "items": json.dumps(items_payload),
+        }
 
         try:
-            created_order = await self.order_repo.add(new_order_model)
-
-            for item in order_data.items:
-                product = product_map[item.product_id]
-                product.stock -= item.quantity
-            await self.product_repo.db.flush()
-
+            await self.redis.xadd("orders_stream", event_data)
             logger.info(
-                "order_created_successfully",
-                order_id=created_order.order_id,
-                user_id=current_user.id,
+                "order_event_published", order_id=order_id, user_id=current_user.id
             )
-            return ReadOrder.model_validate(created_order)
+
+            read_items = [
+                ReadOrderItem(
+                    product_id=i["product_id"],
+                    quantity=i["quantity"],
+                    unit_price=Decimal(str(i["unit_price"])),
+                )
+                for i in items_payload
+            ]
+
+            return ReadOrder(
+                order_id=order_id,
+                user_id=current_user.id,
+                total_price=total_price,
+                state=OrderState.processing,
+                order_date=datetime.now(UTC),
+                items=read_items,
+            )
 
         except Exception as e:
-            logger.error(
-                "db_insert_failed_rolling_back_redis",
-                error=str(e),
-                user_id=current_user.id,
-            )
+            logger.error("stream_publish_failed_rolling_back", error=str(e))
             await self.rollback_script(keys=keys, args=args)
             raise e
 

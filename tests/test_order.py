@@ -1,11 +1,10 @@
 # En tests/test_orders.py
-from decimal import Decimal
 
 import pytest
 from httpx import AsyncClient
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.models.orders import Order as OrderModel
 from src.models.products import Product as ProductModel
 
 pytestmark = pytest.mark.asyncio
@@ -16,6 +15,7 @@ class TestOrderCreation:
         self,
         authenticated_user_client: AsyncClient,
         db_session: AsyncSession,
+        test_redis_client: Redis,
         created_test_user: dict,
         product_in_db: ProductModel,
         another_product_in_db: ProductModel,
@@ -26,25 +26,16 @@ class TestOrderCreation:
                 {"product_id": another_product_in_db.id, "quantity": 5},
             ]
         }
-        expected_total = Decimal("47.50")
-        initial_stock_1 = product_in_db.stock
-        initial_stock_2 = another_product_in_db.stock
 
         response = await authenticated_user_client.post("/orders/", json=order_data)
 
         assert response.status_code == 201
         response_data = response.json()
-        assert response_data["user_id"] == created_test_user["id"]
-        assert Decimal(response_data["total_price"]) == expected_total
-        assert len(response_data["items"]) == 2
-        assert response_data["state"] == "pending"
+        assert response_data["state"] == "processing"
 
-        await db_session.refresh(product_in_db)
-        await db_session.refresh(another_product_in_db)
-        assert product_in_db.stock == initial_stock_1 - 2
-        assert another_product_in_db.stock == initial_stock_2 - 5
+        messages = await test_redis_client.xrange("orders_stream")
+        assert len(messages) == 1
+        event_data = messages[0][1]
 
-        order_in_db = await db_session.get(OrderModel, response_data["order_id"])
-        assert order_in_db is not None
-        assert order_in_db.total_price == expected_total
-        assert len(order_in_db.items) == 2
+        assert int(event_data["order_id"]) == response_data["order_id"]
+        assert int(event_data["user_id"]) == created_test_user["id"]

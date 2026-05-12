@@ -13,6 +13,21 @@ services:
       cache:
         condition: service_healthy
 
+  worker:
+    build: .
+    entrypoint: ["python", "-m", "src.worker"]
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+      web:
+        condition: service_started
+
   db:
     image: postgres:16-alpine
     volumes:
