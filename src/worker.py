@@ -4,11 +4,14 @@ import os
 from decimal import Decimal
 
 import structlog
+from opentelemetry import propagate, trace
+from opentelemetry.trace import SpanKind
 from redis.asyncio import Redis
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from src.core.config import settings
+from src.core.observability import setup_tracing
 from src.models.orders import Order as OrderModel
 from src.models.orders import OrderItem, OrderState
 from src.models.products import Product
@@ -17,6 +20,8 @@ logger = structlog.get_logger()
 
 engine = create_async_engine(settings.DATABASE_URL)
 SessionLocal = async_sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+setup_tracing("order-worker")
 
 
 async def process_orders() -> None:
@@ -67,6 +72,9 @@ async def process_orders() -> None:
 
 
 async def handle_order_event(event_data: dict) -> None:
+    context = propagate.extract({"traceparent": event_data.get("traceparent")})
+    tracer = trace.get_tracer("order-worker")
+
     order_id = int(event_data["order_id"])
     items_data = json.loads(event_data["items"])
 
@@ -87,18 +95,23 @@ async def handle_order_event(event_data: dict) -> None:
         items=order_items,
     )  # type: ignore[call-arg]
 
-    async with SessionLocal() as session:
-        try:
-            async with session.begin():
-                session.add(new_order)
+    with tracer.start_as_current_span(
+        "process_order_worker", context=context, kind=SpanKind.CONSUMER
+    ):
+        async with SessionLocal() as session:
+            try:
+                async with session.begin():
+                    session.add(new_order)
 
-                for item in items_data:
-                    product = await session.get(Product, item["product_id"])
-                    if product:
-                        product.stock -= item["quantity"]
-            logger.info("order_saved_to_db", order_id=order_id)
-        except IntegrityError:
-            logger.warning("order_already_exists_idempotency_hit", order_id=order_id)
+                    for item in items_data:
+                        product = await session.get(Product, item["product_id"])
+                        if product:
+                            product.stock -= item["quantity"]
+                logger.info("order_saved_to_db", order_id=order_id)
+            except IntegrityError:
+                logger.warning(
+                    "order_already_exists_idempotency_hit", order_id=order_id
+                )
 
 
 if __name__ == "__main__":

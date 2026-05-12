@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 
 import structlog
+from opentelemetry import propagate
 from redis.asyncio import Redis
 
 from src.cache.scripts import DEDUCT_STOCK_SCRIPT, ROLLBACK_STOCK_SCRIPT
@@ -118,6 +119,10 @@ class OrderService:
             "total_price": str(total_price),
             "items": json.dumps(items_payload),
         }
+
+        headers: dict[str, str] = {}
+        propagate.inject(headers)
+        event_data["traceparent"] = headers.get("traceparent", "")
 
         try:
             await self.redis.xadd("orders_stream", event_data)

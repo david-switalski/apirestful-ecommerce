@@ -5,6 +5,7 @@ import structlog
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from starlette.status import HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
 
 from src.core.config import settings
@@ -22,6 +23,7 @@ from src.core.exceptions import (
 )
 from src.core.logging_conf import configure_logging
 from src.core.middleware import IdempotencyMiddleware
+from src.core.observability import setup_tracing
 from src.routers.orders import router as orders_router
 from src.routers.products import router as products_router
 from src.routers.users import router as users_router
@@ -36,10 +38,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     yield
 
 
+setup_tracing("ecommerce-api")
+
 # Create FastAPI application instance with project metadata
 app = FastAPI(
     title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION, lifespan=lifespan
 )
+
+FastAPIInstrumentor.instrument_app(app)
 
 app.add_middleware(IdempotencyMiddleware)
 
