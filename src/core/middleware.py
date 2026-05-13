@@ -27,36 +27,38 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
         if not idempotency_key:
             return await call_next(request)
 
-        user_id = "anonymous"
+        user_id = "anon"
         auth_header = request.headers.get("Authorization")
         if auth_header and auth_header.startswith("Bearer "):
             try:
                 token = auth_header.split(" ")[1]
                 payload = jwt.decode(token, options={"verify_signature": False})
-                user_id = str(payload.get("sub", "anonymous"))
+                user_id = str(payload.get("sub", "anon"))
             except jwt.PyJWTError:
-                logger.debug("invalid_token_in_idempotency_middleware")
+                logger.debug("idempotency_middleware_invalid_token")
+                user_id = "anon"
+            except Exception as e:
+                logger.error("idempotency_middleware_token_error", error=str(e))
+                user_id = "anon"
 
         body = await request.body()
-        body_hash = hashlib.sha256(body).hexdigest()
+        body_hash = hashlib.sha256(body).hexdigest()[:16]
 
-        cache_key = (
-            f"idempotency:{user_id}:{request.url.path}:{idempotency_key}:{body_hash}"
-        )
+        cache_key = f"idemp:{user_id}:{request.url.path}:{idempotency_key}:{body_hash}"
 
         async with Redis(connection_pool=redis_pool) as redis:
             try:
                 cached_value = await redis.get(cache_key)
+
                 if cached_value:
-                    if cached_value == b"PROCESSING":
+                    if cached_value == "PROCESSING":
+                        logger.warning("idempotency_conflict_detected", key=cache_key)
                         return JSONResponse(
                             status_code=status.HTTP_409_CONFLICT,
-                            content={
-                                "detail": "Request in process. Please wait a moment."
-                            },
+                            content={"detail": "Request in process. Please wait."},
                         )
 
-                    logger.info("idempotency_hit", key=idempotency_key, user=user_id)
+                    logger.info("idempotency_hit", key=cache_key)
                     data = json.loads(cached_value)
                     return JSONResponse(
                         content=data["body"],
@@ -68,27 +70,29 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
                 if not is_locked:
                     return JSONResponse(
                         status_code=status.HTTP_409_CONFLICT,
-                        content={"detail": "Request duplicated in process."},
+                        content={"detail": "Duplicate request detected."},
                     )
 
                 async def receive() -> dict[str, Any]:
                     return {"type": "http.request", "body": body}
 
                 request._receive = receive
+
                 response = await call_next(request)
 
                 if 200 <= response.status_code < 500:
-                    response_body = b""
+                    res_body = b""
                     async for chunk in response.body_iterator:
-                        response_body += chunk
+                        res_body += chunk
 
                     try:
-                        json_payload = json.loads(response_body.decode())
+                        payload_to_cache = json.loads(res_body.decode())
                     except json.JSONDecodeError:
-                        json_payload = response_body.decode()
-
+                        payload_to_cache = res_body.decode()
+                    except Exception:
+                        payload_to_cache = res_body.decode()
                     cache_data = {
-                        "body": json_payload,
+                        "body": payload_to_cache,
                         "status_code": response.status_code,
                         "headers": {
                             k: v
@@ -100,7 +104,7 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
                     await redis.set(cache_key, json.dumps(cache_data), ex=86400)
 
                     return StarletteResponse(
-                        content=response_body,
+                        content=res_body,
                         status_code=response.status_code,
                         headers=dict(response.headers),
                         media_type=response.media_type,
@@ -112,4 +116,7 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
             except Exception as e:
                 await redis.delete(cache_key)
                 logger.error("idempotency_error", error=str(e))
-                raise e
+                return JSONResponse(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    content={"detail": "Idempotency layer error"},
+                )

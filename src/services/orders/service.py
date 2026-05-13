@@ -50,7 +50,6 @@ class OrderService:
             raise EmptyOrderError()
 
         product_ids = [item.product_id for item in order_data.items]
-
         products = await self.product_repo.get_many_by_ids(product_ids)
         product_map = {p.id: p for p in products}
 
@@ -67,50 +66,38 @@ class OrderService:
 
             keys.append(f"inventory:{product.id}")
             args.append(item.quantity)
-
-            price_decimal = Decimal(str(product.price))
-            total_price += price_decimal * item.quantity
+            total_price += Decimal(str(product.price)) * item.quantity
 
         result = await self.deduct_script(keys=keys, args=args)
 
         if result[0] == -1:
             missing_key = result[1]
             missing_id = int(missing_key.split(":")[1])
-            logger.warning("cache_miss_inventory", product_id=missing_id)
 
-            missing_product = product_map[missing_id]
-            await self.redis.set(missing_key, missing_product.stock)
+            p_to_refill = product_map[missing_id]
+            await self.redis.set(missing_key, p_to_refill.stock, nx=True)
 
             result = await self.deduct_script(keys=keys, args=args)
 
         if result[0] == -2:
-            failed_key = result[1]
-            failed_id = int(failed_key.split(":")[1])
-            current_stock = result[2]
-            failed_product = product_map[failed_id]
-
-            requested_qty = next(
-                item.quantity
-                for item in order_data.items
-                if item.product_id == failed_id
-            )
-
+            failed_id = int(result[1].split(":")[1])
             raise InsufficientStockError(
                 product_id=failed_id,
-                product_name=failed_product.name,
-                requested=requested_qty,
-                available=current_stock,
+                product_name=product_map[failed_id].name,
+                requested=next(
+                    i.quantity for i in order_data.items if i.product_id == failed_id
+                ),
+                available=int(result[2]),
             )
 
         order_id = generate_order_id()
-
         items_payload = [
             {
-                "product_id": item.product_id,
-                "quantity": item.quantity,
-                "unit_price": str(product_map[item.product_id].price),
+                "product_id": i.product_id,
+                "quantity": i.quantity,
+                "unit_price": str(product_map[i.product_id].price),
             }
-            for item in order_data.items
+            for i in order_data.items
         ]
 
         event_data = {
@@ -126,30 +113,23 @@ class OrderService:
 
         try:
             await self.redis.xadd("orders_stream", event_data)
-            logger.info(
-                "order_event_published", order_id=order_id, user_id=current_user.id
-            )
-
-            read_items = [
-                ReadOrderItem(
-                    product_id=i["product_id"],
-                    quantity=i["quantity"],
-                    unit_price=Decimal(str(i["unit_price"])),
-                )
-                for i in items_payload
-            ]
-
             return ReadOrder(
                 order_id=order_id,
                 user_id=current_user.id,
                 total_price=total_price,
                 state=OrderState.processing,
                 order_date=datetime.now(UTC),
-                items=read_items,
+                items=[
+                    ReadOrderItem(
+                        product_id=i["product_id"],
+                        quantity=i["quantity"],
+                        unit_price=Decimal(str(i["unit_price"])),
+                    )
+                    for i in items_payload
+                ],
             )
-
         except Exception as e:
-            logger.error("stream_publish_failed_rolling_back", error=str(e))
+            logger.error("order_publish_failed_rolling_back_stock", error=str(e))
             await self.rollback_script(keys=keys, args=args)
             raise e
 

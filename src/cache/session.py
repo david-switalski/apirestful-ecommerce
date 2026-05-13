@@ -13,7 +13,9 @@ redis_pool = ConnectionPool(
     port=settings.REDIS_PORT,
     password=settings.REDIS_PASSWORD,
     db=settings.REDIS_DB,
-    decode_responses=True,  # Automatically decode responses from bytes to strings (UTF-8).
+    decode_responses=True,
+    max_connections=1000,
+    timeout=5.0,
 )
 
 

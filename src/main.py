@@ -40,22 +40,29 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 setup_tracing("ecommerce-api")
 
-# Create FastAPI application instance with project metadata
 app = FastAPI(
     title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION, lifespan=lifespan
 )
 
 FastAPIInstrumentor.instrument_app(app)
 
+origins = ["http://localhost:8000", "http://127.0.0.1:8000"]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.add_middleware(IdempotencyMiddleware)
 
-# Include routers for products, users and orders endpoints
+# ROUTERS
 app.include_router(products_router)
 app.include_router(orders_router)
 app.include_router(users_router)
 
 
-# MIDDLEWARE & ROUTERS
+# EXCEPTION HANDLERS
 @app.exception_handler(ProductNotFoundError)
 async def product_not_found_exception_handler(
     request: Request, exc: ProductNotFoundError
@@ -80,20 +87,6 @@ async def bad_request_exception_handler(
 @app.exception_handler(ProductUnavailableError)
 async def conflict_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     return JSONResponse(status_code=HTTP_409_CONFLICT, content={"detail": str(exc)})
-
-
-# List of allowed origins for CORS
-origins = ["http://localhost:8000", "http://127.0.0.1:8000"]
-
-# Add CORS middleware to allow cross-origin requests from specified origins
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-app.add_middleware(IdempotencyMiddleware)
 
 
 @app.get("/")
